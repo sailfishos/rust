@@ -57,11 +57,11 @@ BuildRequires:  gdb
 
 
 # Virtual provides for folks who attempt "dnf install rustc"
-Provides:       rustc = %{rust_version}-%{release}
-Provides:       rustc = %{rust_version}-%{release}
+Provides:       rustc = %{version}-%{release}
+Provides:       rustc = %{version}-%{release}
 
 # Always require our exact standard library
-Requires:       %{name}-std-static = %{rust_version}-%{release}
+Requires:       %{name}-std-static = %{version}-%{release}
 
 # The C compiler is needed at runtime just for linking.  Someday rustc might
 # invoke the linker directly, and then we'll only need binutils.
@@ -111,7 +111,7 @@ This package includes the common functionality for %{name}-gdb and %{name}-lldb.
 Summary:        GDB pretty printers for Rust
 BuildArch:      noarch
 Requires:       gdb
-Requires:       %{name}-debugger-common = %{rust_version}-%{release}
+Requires:       %{name}-debugger-common = %{version}-%{release}
 
 %description gdb
 This package includes the rust-gdb script, which allows easier debugging of Rust
@@ -125,7 +125,7 @@ Summary:        LLDB pretty printers for Rust
 BuildArch:      noarch
 Requires:       lldb
 Requires:       python3-lldb
-Requires:       %{name}-debugger-common = %{rust_version}-%{release}
+Requires:       %{name}-debugger-common = %{version}-%{release}
 
 %description lldb
 This package includes the rust-lldb script, which allows easier debugging of Rust
