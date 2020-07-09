@@ -16,7 +16,7 @@
 
 Name:           rust
 # TODO: Suffix version at the end with +git1
-Version:        %{rust_version}+git1
+Version:        %{rust_version}+git2
 Release:        1
 Summary:        The Rust Programming Language
 License:        (ASL 2.0 or MIT) and (BSD and MIT)
@@ -29,6 +29,7 @@ Source1:        https://static.rust-lang.org/dist/rust-%{rust_version}-%{rust_tr
 
 Patch1: 0001-Use-a-non-existent-test-path-instead-of-clobbering-d.patch
 Patch2: llvm-targets.patch
+Patch3: disable-statx.patch
 
 %global bootstrap_root rust-%{rust_version}-%{rust_triple}
 %global local_rust_root %{_builddir}/%{bootstrap_root}/usr
@@ -155,6 +156,7 @@ test -f '%{local_rust_root}/bin/rustc'
 
 %patch1 -p1
 %patch2 -p0
+%patch3 -p1
 
 sed -i.try-py3 -e '/try python2.7/i try python3 "$@"' ./configure
 

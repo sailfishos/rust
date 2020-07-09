@@ -1,2 +1,5 @@
-* Thu Jun 12 2020 Raine Makelainen <raine.makelainen@jolla.com> - 1.44.0+git1
+* Fri Jun 26 2020 Tomi Leppänen <tomi.leppanen@jolla.com> - 1.44.0+git2
+- [rust] Disable statx for all builds. JB#50106
+
+* Fri Jun 12 2020 Raine Makelainen <raine.makelainen@jolla.com> - 1.44.0+git1
 - [rust] Packaging for 1.44.0 version. JB#50106
