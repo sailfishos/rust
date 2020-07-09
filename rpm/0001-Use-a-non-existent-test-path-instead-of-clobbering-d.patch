@@ -1,7 +1,8 @@
-From fbd3fbdb24563a9d8fd3651f6bdc90bbbbd81d3e Mon Sep 17 00:00:00 2001
+From e9491f4aa3b1c2c0f9b1fdc684e986ba035a5486 Mon Sep 17 00:00:00 2001
 From: Josh Stone <jistone@redhat.com>
 Date: Fri, 1 May 2020 16:50:10 -0700
-Subject: [PATCH] Use a non-existent test path instead of clobbering /dev/null
+Subject: [PATCH 1/3] Use a non-existent test path instead of clobbering
+ /dev/null
 
 Signed-off-by: Raine Makelainen <raine.makelainen@jolla.com>
 ---

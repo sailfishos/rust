@@ -15,21 +15,20 @@
 %bcond_without lldb
 
 Name:           rust
-# TODO: Suffix version at the end with +git1
-Version:        %{rust_version}+git2
+Version:        1.44.0
 Release:        1
 Summary:        The Rust Programming Language
 License:        (ASL 2.0 or MIT) and (BSD and MIT)
 # ^ written as: (rust itself) and (bundled libraries)
 URL:            https://www.rust-lang.org
 
-%global rustc_package rustc-%{rust_version}-src
-Source0:        https://static.rust-lang.org/dist/rustc-%{rust_version}-src.tar.gz
-Source1:        https://static.rust-lang.org/dist/rust-%{rust_version}-%{rust_triple}.tar.gz
+Source0:        %{name}-%{version}.tar.gz
+Source1:        %{name}-%{rust_version}-i686-unknown-linux-gnu.tar.gz
+Source2:        %{name}-%{rust_version}-armv7-unknown-linux-gnueabihf.tar.gz
 
 Patch1: 0001-Use-a-non-existent-test-path-instead-of-clobbering-d.patch
-Patch2: llvm-targets.patch
-Patch3: disable-statx.patch
+Patch2: 0002-Set-proper-llvm-targets.patch
+Patch3: 0003-Disable-statx-for-all-builds.-JB-50106.patch
 
 %global bootstrap_root rust-%{rust_version}-%{rust_triple}
 %global local_rust_root %{_builddir}/%{bootstrap_root}/usr
@@ -145,17 +144,23 @@ and ensure that you'll always get a repeatable build.
 
 
 %prep
+%setup -q -n %{name}-%{version}/%{name}
 
-%setup -q -n %{bootstrap_root} -T -b 1
+%ifarch %ix86
+tar xzf %{SOURCE1} -C .
+%else
+tar xzf %{SOURCE2} -C .
+%endif
+
+pushd %{bootstrap_root}
 ./install.sh --components=cargo,rustc,rust-std-%{rust_triple} \
   --prefix=%{local_rust_root} --disable-ldconfig
 test -f '%{local_rust_root}/bin/cargo'
 test -f '%{local_rust_root}/bin/rustc'
-
-%setup -q -n %{rustc_package}
+popd
 
 %patch1 -p1
-%patch2 -p0
+%patch2 -p1
 %patch3 -p1
 
 sed -i.try-py3 -e '/try python2.7/i try python3 "$@"' ./configure
@@ -167,30 +172,13 @@ rm -rf src/tools/clang
 rm -rf src/tools/lld
 rm -rf src/tools/lldb
 
-# Remove other unused vendored libraries
-# TODO: This is do be fixed still to have http2 enabled.
-# rm -rf vendor/curl-sys/curl/
-rm -rf vendor/jemalloc-sys/jemalloc/
-rm -rf vendor/libz-sys/src/zlib/
-rm -rf vendor/lzma-sys/xz-*/
-rm -rf vendor/openssl-src/openssl/
-
 # This only affects the transient rust-installer, but let it use our dynamic xz-libs
 sed -i.lzma -e '/LZMA_API_STATIC/d' src/bootstrap/tool.rs
-
-# rename bundled license for packaging
-cp -a vendor/backtrace-sys/src/libbacktrace/LICENSE{,-libbacktrace}
 
 # Static linking to distro LLVM needs to add -lffi
 # https://github.com/rust-lang/rust/issues/34486
 sed -i.ffi -e '$a #[link(name = "ffi")] extern {}' \
   src/librustc_llvm/lib.rs
-
-# The configure macro will modify some autoconf-related files, which upsets
-# cargo when it tries to verify checksums in those files.  If we just truncate
-# that file list, cargo won't have anything to complain about.
-find vendor -name .cargo-checksum.json \
-  -exec sed -i.uncheck -e 's/"files":{[^}]*}/"files":{ }/' '{}' '+'
 
 # Sometimes Rust sources start with #![...] attributes, and "smart" editors think
 # it's a shebang and make them executable. Then brp-mangle-shebangs gets upset...
@@ -226,14 +214,13 @@ export RUSTFLAGS="%{rustflags}"
   --disable-compiler-docs \
   --disable-rpath \
   --disable-codegen-tests \
+  --disable-manage-submodules \
+  --disable-parallel-compiler \
   %{enable_debuginfo} \
   --enable-extended \
   --enable-vendor \
   --tools=cargo \
-  --llvm-root=/usr/ \
-  --enable-parallel-compiler
-
-# --set="parallel-compiler=true"
+  --llvm-root=/usr/
 
 %{python} ./x.py build
 
@@ -308,7 +295,6 @@ rm -fr %{buildroot}%{_mandir}/man1
 
 %files
 %license COPYRIGHT LICENSE-APACHE LICENSE-MIT
-%license vendor/backtrace-sys/src/libbacktrace/LICENSE-libbacktrace
 %doc README.md
 %{_bindir}/rustc
 %{_libdir}/*.so
