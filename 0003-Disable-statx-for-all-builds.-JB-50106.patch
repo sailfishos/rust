@@ -1,4 +1,10 @@
-Disable statx for all builds.
+From 191c6df3cfb0a3daae7ba40966ed22f8a63af453 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tomi=20Lepp=C3=A4nen?= <tomi.leppanen@jolla.com>
+Date: Fri, 26 Jun 2020 11:58:19 +0300
+Subject: [PATCH 3/3] Disable statx for all builds. JB#50106
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 libstd implements statx using syscall and thus it will not work on
 scratchbox2. Moreover as it is supported only by Linux 4.11 and newer
@@ -6,10 +12,17 @@ it's little use for us at the moment. It can be disabled and which means
 that optional extra information is set to None. Software should handle
 that gracefully without issues thanks to rust's type system.
 
+Signed-off-by: Tomi Leppänen <tomi.leppanen@jolla.com
+Signed-off-by: Matti Kosola <matti.kosola@jolla.com>
 ---
---- rustc-1.44.0-src/src/libstd/sys/unix/fs.rs.old	2020-06-01 18:44:16.000000000 +0300
-+++ rustc-1.44.0-src/src/libstd/sys/unix/fs.rs	2020-06-26 12:42:46.438070586 +0300
-@@ -58,20 +58,9 @@
+ src/libstd/sys/unix/fs.rs | 15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
+
+diff --git a/src/libstd/sys/unix/fs.rs b/src/libstd/sys/unix/fs.rs
+index a233aa47dff..45fb192fc8c 100644
+--- a/src/libstd/sys/unix/fs.rs
++++ b/src/libstd/sys/unix/fs.rs
+@@ -58,20 +58,9 @@ pub struct File(FileDesc);
  // https://github.com/rust-lang/rust/pull/67774
  macro_rules! cfg_has_statx {
      ({ $($then_tt:tt)* } else { $($else_tt:tt)* }) => {
@@ -32,3 +45,6 @@ that gracefully without issues thanks to rust's type system.
  }
  
  cfg_has_statx! {{
+-- 
+2.26.2
+
