@@ -15,8 +15,7 @@
 %bcond_without lldb
 
 Name:           rust
-# TODO: Suffix version at the end with +git1
-Version:        %{rust_version}+git2
+Version:        %{rust_version}+git3
 Release:        1
 Summary:        The Rust Programming Language
 License:        (ASL 2.0 or MIT) and (BSD and MIT)
@@ -24,12 +23,14 @@ License:        (ASL 2.0 or MIT) and (BSD and MIT)
 URL:            https://www.rust-lang.org
 
 %global rustc_package rustc-%{rust_version}-src
-Source0:        https://static.rust-lang.org/dist/rustc-%{rust_version}-src.tar.gz
-Source1:        https://static.rust-lang.org/dist/rust-%{rust_version}-%{rust_triple}.tar.gz
+Source0:        rustc-%{rust_version}-src.tar.gz
+Source100:      rust-%{rust_version}-i686-unknown-linux-gnu.tar.gz
+Source101:      rust-%{rust_version}-armv7-unknown-linux-gnueabihf.tar.gz
+Source200:      README.md
 
 Patch1: 0001-Use-a-non-existent-test-path-instead-of-clobbering-d.patch
-Patch2: llvm-targets.patch
-Patch3: disable-statx.patch
+Patch2: 0002-Set-proper-llvm-targets.patch
+Patch3: 0003-Disable-statx-for-all-builds.-JB-50106.patch
 
 %global bootstrap_root rust-%{rust_version}-%{rust_triple}
 %global local_rust_root %{_builddir}/%{bootstrap_root}/usr
@@ -40,7 +41,6 @@ BuildRequires:  cmake
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
 BuildRequires:  ncurses-devel
-# BuildRequires:  curl
 BuildRequires:  pkgconfig(libcurl)
 # build.rs and boostrap/config.rs => cargo_native_static?
 BuildRequires:  pkgconfig(liblzma)
@@ -56,6 +56,8 @@ BuildRequires:  procps
 # debuginfo-gdb tests need gdb
 BuildRequires:  gdb
 
+# Disable aach64 build
+ExcludeArch:    aarch64
 
 # Virtual provides for folks who attempt "dnf install rustc"
 Provides:       rustc = %{version}-%{release}
@@ -145,8 +147,11 @@ and ensure that you'll always get a repeatable build.
 
 
 %prep
-
-%setup -q -n %{bootstrap_root} -T -b 1
+%ifarch %ix86
+%setup -q -n %{bootstrap_root} -T -b 100
+%else
+%setup -q -n %{bootstrap_root} -T -b 101
+%endif
 ./install.sh --components=cargo,rustc,rust-std-%{rust_triple} \
   --prefix=%{local_rust_root} --disable-ldconfig
 test -f '%{local_rust_root}/bin/cargo'
@@ -155,7 +160,7 @@ test -f '%{local_rust_root}/bin/rustc'
 %setup -q -n %{rustc_package}
 
 %patch1 -p1
-%patch2 -p0
+%patch2 -p1
 %patch3 -p1
 
 sed -i.try-py3 -e '/try python2.7/i try python3 "$@"' ./configure
@@ -212,8 +217,6 @@ export RUSTFLAGS="%{rustflags}"
 # %define enable_debuginfo --disable-debuginfo --disable-debuginfo-only-std --disable-debuginfo-tools --disable-debuginfo-lines
 %define enable_debuginfo --debuginfo-level=0 --debuginfo-level-std=2 --disable-debuginfo --disable-debuginfo-only-std --disable-debuginfo-tools --disable-debuginfo-lines
 
-%define codegen_units_std --set rust.codegen-units-std=1
-
 %configure --disable-option-checking \
   --libdir=%{common_libdir} \
   --build=%{rust_triple} --host=%{rust_triple} --target=%{rust_triple} \
@@ -232,8 +235,6 @@ export RUSTFLAGS="%{rustflags}"
   --tools=cargo \
   --llvm-root=/usr/ \
   --enable-parallel-compiler
-
-# --set="parallel-compiler=true"
 
 %{python} ./x.py build
 
@@ -295,12 +296,14 @@ rm -f %{buildroot}%{_bindir}/rustdoc
 rm -fr %{buildroot}%{_mandir}/man1
 
 %check
+%ifarch %ix86
 %{?cmake_path:export PATH=%{cmake_path}:$PATH}
 %{?rustflags:export RUSTFLAGS="%{rustflags}"}
 
 # The results are not stable on koji, so mask errors and just log it.
 %{python} ./x.py test --no-fail-fast || :
 %{python} ./x.py test --no-fail-fast cargo || :
+%endif
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
