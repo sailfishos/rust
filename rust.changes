@@ -1,3 +1,6 @@
+* Tue Jul 14 2020 Niels Breet <niels.breet@jolla.com> - 1.44.0+git4
+- [rust] Enable ccache in order to speed up builds. Contributes to JB#50427
+
 * Fri Jul 10 2020 Matti Kosola <matti.kosola@jolla.com> - 1.44.0+git3
 - [rust] Clean up packaging. JB#50106
 - [rust] Use default codegen units. JB#50106
