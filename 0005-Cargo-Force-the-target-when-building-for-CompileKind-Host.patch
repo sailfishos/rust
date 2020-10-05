@@ -1,0 +1,29 @@
+From f58f4a0fb53df2b1b27c11986596c62de803afdf Mon Sep 17 00:00:00 2001
+From: David Greaves <david.greaves@jolla.com>
+Date: Mon, 30 Nov 2020 13:07:39 +0000
+Subject: [PATCH] Force the target when building for CompileKind::Host
+
+Currently hardwired to be i686-unknown-linux-gnu
+
+Signed-off-by: David Greaves <david.greaves@jolla.com>
+---
+ src/tools/cargo/src/cargo/core/compiler/mod.rs | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/tools/cargo/src/cargo/core/compiler/mod.rs b/src/tools/cargo/src/cargo/core/compiler/mod.rs
+index faee6e5..4af3f29 100644
+--- a/src/tools/cargo/src/cargo/core/compiler/mod.rs
++++ b/src/tools/cargo/src/cargo/core/compiler/mod.rs
+@@ -912,6 +912,9 @@ fn build_base_args<'a, 'cfg>(
+ 
+     if let CompileKind::Target(n) = unit.kind {
+         cmd.arg("--target").arg(n.rustc_target());
++    } else {
++	debug!("kind is {:?} - Forcing this to be 686", unit.kind);
++        cmd.arg("--target").arg("i686-unknown-linux-gnu");
+     }
+ 
+     opt(
+-- 
+2.20.1
+

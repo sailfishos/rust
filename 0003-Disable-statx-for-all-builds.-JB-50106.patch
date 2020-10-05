@@ -1,7 +1,7 @@
-From 191c6df3cfb0a3daae7ba40966ed22f8a63af453 Mon Sep 17 00:00:00 2001
+From f131514903bb02f5f9f1d312aea19e954ab1ffee Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tomi=20Lepp=C3=A4nen?= <tomi.leppanen@jolla.com>
 Date: Fri, 26 Jun 2020 11:58:19 +0300
-Subject: [PATCH 3/3] Disable statx for all builds. JB#50106
+Subject: [PATCH 3/4] Disable statx for all builds. JB#50106
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -46,5 +46,5 @@ index a233aa47dff..45fb192fc8c 100644
  
  cfg_has_statx! {{
 -- 
-2.26.2
+2.20.1
 
