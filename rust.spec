@@ -6,7 +6,13 @@
 %ifarch %ix86
 %global rust_triple i686-unknown-linux-gnu
 %else
+%ifarch %{arm}
 %global rust_triple armv7-unknown-linux-gnueabihf
+%else
+%ifarch aarch64
+%global rust_triple aarch64-unknown-linux-gnu
+%endif
+%endif
 %endif
 
 %global python python3
@@ -15,7 +21,7 @@
 %bcond_without lldb
 
 Name:           rust
-Version:        %{rust_version}+git3
+Version:        %{rust_version}+git4
 Release:        1
 Summary:        The Rust Programming Language
 License:        (ASL 2.0 or MIT) and (BSD and MIT)
@@ -26,6 +32,7 @@ URL:            https://www.rust-lang.org
 Source0:        rustc-%{rust_version}-src.tar.gz
 Source100:      rust-%{rust_version}-i686-unknown-linux-gnu.tar.gz
 Source101:      rust-%{rust_version}-armv7-unknown-linux-gnueabihf.tar.gz
+Source102:      rust-%{rust_version}-aarch64-unknown-linux-gnu.tar.gz
 Source200:      README.md
 
 Patch1: 0001-Use-a-non-existent-test-path-instead-of-clobbering-d.patch
@@ -55,9 +62,6 @@ BuildRequires:  procps
 
 # debuginfo-gdb tests need gdb
 BuildRequires:  gdb
-
-# Disable aach64 build
-ExcludeArch:    aarch64
 
 # Virtual provides for folks who attempt "dnf install rustc"
 Provides:       rustc = %{version}-%{release}
@@ -150,7 +154,16 @@ and ensure that you'll always get a repeatable build.
 %ifarch %ix86
 %setup -q -n %{bootstrap_root} -T -b 100
 %else
+%ifarch %{arm}
 %setup -q -n %{bootstrap_root} -T -b 101
+%else
+%ifarch aarch64
+%setup -q -n %{bootstrap_root} -T -b 102
+%else
+echo "No idea how to build for your arch..."
+exit 1
+%endif
+%endif
 %endif
 ./install.sh --components=cargo,rustc,rust-std-%{rust_triple} \
   --prefix=%{local_rust_root} --disable-ldconfig
