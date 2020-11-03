@@ -5,12 +5,16 @@
 
 %ifarch %ix86
 %global rust_triple i686-unknown-linux-gnu
+%define xbuildjobs %{nil}
 %else
 %ifarch %{arm}
 %global rust_triple armv7-unknown-linux-gnueabihf
+%define xbuildjobs %{nil}
 %else
 %ifarch aarch64
 %global rust_triple aarch64-unknown-linux-gnu
+# Limit build jobs in order to not exhaust memory on builds. JB#50504
+%define xbuildjobs -j 4
 %endif
 %endif
 %endif
@@ -43,6 +47,7 @@ Patch3: 0003-Disable-statx-for-all-builds.-JB-50106.patch
 %global local_rust_root %{_builddir}/%{bootstrap_root}/usr
 %global bootstrap_source rust-%{rust_version}-%{rust_triple}.tar.gz
 
+BuildRequires:  ccache
 BuildRequires:  make
 BuildRequires:  cmake
 BuildRequires:  gcc
@@ -226,9 +231,13 @@ export RUSTFLAGS="%{rustflags}"
 
 # full debuginfo is exhausting memory; just do libstd for now
 # https://github.com/rust-lang/rust/issues/45854
-# %define enable_debuginfo --debuginfo-level=0 --debuginfo-level-std=2
-# %define enable_debuginfo --disable-debuginfo --disable-debuginfo-only-std --disable-debuginfo-tools --disable-debuginfo-lines
+# Limit memory usage for aarch64 build even more. JB#50504
+%ifarch aarch64
+%define enable_debuginfo --debuginfo-level=0 --debuginfo-level-rustc=0 --debuginfo-level-std=0 --debuginfo-level-tools=0 --debuginfo-level-tests=0
+%else
 %define enable_debuginfo --debuginfo-level=0 --debuginfo-level-std=2 --disable-debuginfo --disable-debuginfo-only-std --disable-debuginfo-tools --disable-debuginfo-lines
+%endif
+
 
 %configure --disable-option-checking \
   --libdir=%{common_libdir} \
@@ -237,19 +246,22 @@ export RUSTFLAGS="%{rustflags}"
   --local-rust-root=%{local_rust_root} \
   --enable-local-rebuild \
   --enable-llvm-link-shared \
+  --enable-ccache \
   --enable-optimize \
   --disable-docs \
   --disable-compiler-docs \
+  --disable-jemalloc \
   --disable-rpath \
   --disable-codegen-tests \
+  --disable-verbose-tests \
   %{enable_debuginfo} \
   --enable-extended \
   --enable-vendor \
+  --set rust.codegen-units-std=1 \
   --tools=cargo \
-  --llvm-root=/usr/ \
-  --enable-parallel-compiler
+  --llvm-root=/usr/
 
-%{python} ./x.py build
+%{python} ./x.py %{xbuildjobs} build
 
 
 %install
