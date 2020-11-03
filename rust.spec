@@ -226,9 +226,7 @@ export RUSTFLAGS="%{rustflags}"
 
 # full debuginfo is exhausting memory; just do libstd for now
 # https://github.com/rust-lang/rust/issues/45854
-# %define enable_debuginfo --debuginfo-level=0 --debuginfo-level-std=2
-# %define enable_debuginfo --disable-debuginfo --disable-debuginfo-only-std --disable-debuginfo-tools --disable-debuginfo-lines
-%define enable_debuginfo --debuginfo-level=0 --debuginfo-level-std=2 --disable-debuginfo --disable-debuginfo-only-std --disable-debuginfo-tools --disable-debuginfo-lines
+%define enable_debuginfo --debuginfo-level=0 --debuginfo-level-rustc=0 --debuginfo-level-std=0 --debuginfo-level-tools=0 --debuginfo-level-tests=0
 
 %configure --disable-option-checking \
   --libdir=%{common_libdir} \
@@ -242,9 +240,11 @@ export RUSTFLAGS="%{rustflags}"
   --disable-compiler-docs \
   --disable-rpath \
   --disable-codegen-tests \
+  --disable-verbose-tests \
   %{enable_debuginfo} \
   --enable-extended \
   --enable-vendor \
+  --set rust.codegen-units-std=1 \
   --tools=cargo \
   --llvm-root=/usr/ \
   --enable-parallel-compiler
