@@ -249,10 +249,9 @@ export RUSTFLAGS="%{rustflags}"
   --enable-vendor \
   --set rust.codegen-units-std=1 \
   --tools=cargo \
-  --llvm-root=/usr/ \
-  --enable-parallel-compiler
+  --llvm-root=/usr/
 
-%{python} ./x.py build
+%{python} ./x.py -j 4 build
 
 
 %install
