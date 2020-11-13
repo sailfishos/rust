@@ -1,3 +1,6 @@
+* Mon Oct 26 2020 Matti Kosola <matti.kosola@jolla.com> - 1.44.0+git4
+- [rust] Enable aarch64 build. Fixes JB#50504
+
 * Fri Jul 10 2020 Matti Kosola <matti.kosola@jolla.com> - 1.44.0+git3
 - [rust] Clean up packaging. JB#50106
 - [rust] Use default codegen units. JB#50106
