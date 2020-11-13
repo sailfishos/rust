@@ -43,6 +43,7 @@ Patch3: 0003-Disable-statx-for-all-builds.-JB-50106.patch
 %global local_rust_root %{_builddir}/%{bootstrap_root}/usr
 %global bootstrap_source rust-%{rust_version}-%{rust_triple}.tar.gz
 
+BuildRequires:  ccache
 BuildRequires:  make
 BuildRequires:  cmake
 BuildRequires:  gcc
@@ -235,9 +236,11 @@ export RUSTFLAGS="%{rustflags}"
   --local-rust-root=%{local_rust_root} \
   --enable-local-rebuild \
   --enable-llvm-link-shared \
+  --enable-ccache \
   --enable-optimize \
   --disable-docs \
   --disable-compiler-docs \
+  --disable-jemalloc \
   --disable-rpath \
   --disable-codegen-tests \
   --disable-verbose-tests \
