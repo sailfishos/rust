@@ -1,3 +1,6 @@
+* Tue Nov 3 2020 Niels Breet <niels.breet@jolla.com> - 1.44.0+git5
+- [rust] Limit memory usage for aarch64 builds. JB#50504
+
 * Mon Oct 26 2020 Matti Kosola <matti.kosola@jolla.com> - 1.44.0+git4
 - [rust] Enable aarch64 build. Fixes JB#50504
 
