@@ -500,7 +500,12 @@ rm -fr %{buildroot}%{_mandir}/man1
 # This is the non x86 spec to produce dummy rust/cargo binaries
 %else
 
-# The rust description
+# The rust package tags
+# The requires should specify = %%{version}-%%{release} but they are repackaged from
+# cross-rust and we can't specify the release in OBS
+Requires:       %{name}-std-static = %{version}
+Requires:       %{name}-std-static-%{rust_x86_triple} = %{version}
+
 %description
 A stub of rust for use in scratchbox2
 
@@ -525,6 +530,11 @@ cat <<'EOF' >%{buildroot}%{_bindir}/cargo
 echo "This is the stub cargo. If you see this, scratchbox2 is not working. Called as"
 echo $0 "$@"
 EOF
+mkdir %{buildroot}/.cargo
+cat <<'EOF' > %{buildroot}/.cargo/config
+[target.i686-unknown-linux-gnu]
+linker = "/usr/bin/host-cc"
+EOF
 chmod 755 %{buildroot}%{_bindir}/*
 
 %files
@@ -534,4 +544,5 @@ chmod 755 %{buildroot}%{_bindir}/*
 %files -n cargo
 %defattr(-,root,root,0755)
 %{_bindir}/cargo
+/.cargo
 %endif
