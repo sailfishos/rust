@@ -61,6 +61,7 @@ Patch2: 0002-Set-proper-llvm-targets.patch
 Patch3: 0003-Disable-statx-for-all-builds.-JB-50106.patch
 Patch4: 0004-Scratchbox2-needs-to-be-able-to-tell-rustc-the-defau.patch
 Patch5: 0005-Cargo-Force-the-target-when-building-for-CompileKind-Host.patch
+Patch6: 0006-Provide-ENV-controls-to-bypass-some-sb2-calls-betwee.patch
 # This is the real rustc spec - the stub one appears near the end.
 %ifarch %ix86
 
@@ -142,6 +143,9 @@ Requires:       /usr/bin/cc
 # very eager by default, so we have to limit it to -g, only debugging symbols.
 %global _find_debuginfo_opts -g
 %undefine _include_minidebuginfo
+
+# Don't strip the rlibs as this fails for cross-built libraries
+%define __strip /bin/true
 
 %global rustflags -Clink-arg=-Wl,-z,relro,-z,now
 
@@ -238,6 +242,7 @@ test -f '%{local_rust_root}/bin/rustc'
 %patch3 -p1
 %patch4 -p1
 %patch5 -p1
+%patch6 -p1
 
 sed -i.try-py3 -e '/try python2.7/i try python3 "$@"' ./configure
 
@@ -303,7 +308,7 @@ FFLAGS=
 %endif
 
 
-# arm cc needs to find ld so ensure PATH points there
+# arm cc needs to find ld so ensure PATH points to /opt/cross/bin too
 PATH=/opt/cross/bin/:$PATH
 
 ###
@@ -392,6 +397,9 @@ find %{buildroot}%{_libdir} -maxdepth 1 -type f -name '*.so' \
 # The non-x86 .so files would be used by rustc if it had been built
 # for those targets
 rm %{buildroot}%{rustlibdir}/%{rust_arm_triple}/lib/*.so
+%if 0%{?build_aarch64}
+rm %{buildroot}%{rustlibdir}/%{rust_aarch64_triple}/lib/*.so
+%endif
 
 # Remove installer artifacts (manifests, uninstall scripts, etc.)
 find %{buildroot}%{rustlibdir} -maxdepth 1 -type f -exec rm -v '{}' '+'
