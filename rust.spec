@@ -36,7 +36,7 @@
 %global rust_aarch64_triple aarch64-unknown-linux-gnu
 %global rust_x86_triple i686-unknown-linux-gnu
 
-%define build_aarch64 1
+%define build_aarch64 0
 
 %global python python3
 
