@@ -1,3 +1,7 @@
+* Fri Jan 22 2021 David Greaves <david.greaves@jolla.com> - 1.44.0+git7
+- [build] Disable aarch64. JB#50499
+- Remove unused bootstrap binaries
+
 * Fri Jan 22 2021 David Greaves <david.greaves@jolla.com> - 1.44.0+git6
 - [rust] Enable cross-building. JB#50499
 - Add support for default targets
