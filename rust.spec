@@ -44,7 +44,7 @@
 %bcond_without lldb
 
 Name:           rust
-Version:        %{rust_version}+git7
+Version:        %{rust_version}+git8
 Release:        1
 Summary:        The Rust Programming Language
 License:        (ASL 2.0 or MIT) and (BSD and MIT)
@@ -512,7 +512,9 @@ rm -fr %{buildroot}%{_mandir}/man1
 # The requires should specify = %%{version}-%%{release} but they are repackaged from
 # cross-rust and we can't specify the release in OBS
 Requires:       %{name}-std-static = %{version}
-Requires:       %{name}-std-static-%{rust_x86_triple} = %{version}
+# There should be an = %version dependency for external deployment but the cross-
+# packaging doesn't work properly
+Requires:       %{name}-std-static-%{rust_x86_triple}
 
 %description
 A stub of rust for use in scratchbox2
