@@ -44,7 +44,7 @@
 %bcond_without lldb
 
 Name:           rust
-Version:        %{rust_version}+git7
+Version:        %{rust_version}+git8
 Release:        1
 Summary:        The Rust Programming Language
 License:        (ASL 2.0 or MIT) and (BSD and MIT)
@@ -81,23 +81,6 @@ BuildRequires:  make
 BuildRequires:  cmake
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
-# The cross- packages install into /opt/cross
-BuildRequires:  cross-armv7hl-gcc
-BuildRequires:  cross-armv7hl-binutils
-BuildRequires:  cross-armv7hl-as
-BuildRequires:  cross-armv7hl-glibc
-BuildRequires:  cross-armv7hl-glibc-devel
-BuildRequires:  cross-armv7hl-glibc-headers
-BuildRequires:  cross-armv7hl-kernel-headers
-%if 0%{?build_aarch64}
-BuildRequires:  cross-aarch64-gcc
-BuildRequires:  cross-aarch64-binutils
-BuildRequires:  cross-aarch64-as
-BuildRequires:  cross-aarch64-glibc
-BuildRequires:  cross-aarch64-glibc-devel
-BuildRequires:  cross-aarch64-glibc-headers
-BuildRequires:  cross-aarch64-kernel-headers
-%endif
 
 BuildRequires:  ncurses-devel
 BuildRequires:  pkgconfig(libcurl)
@@ -512,7 +495,9 @@ rm -fr %{buildroot}%{_mandir}/man1
 # The requires should specify = %%{version}-%%{release} but they are repackaged from
 # cross-rust and we can't specify the release in OBS
 Requires:       %{name}-std-static = %{version}
-Requires:       %{name}-std-static-%{rust_x86_triple} = %{version}
+# There should be an = %version dependency for external deployment but the cross-
+# packaging doesn't work properly
+Requires:       %{name}-std-static-%{rust_x86_triple}
 
 %description
 A stub of rust for use in scratchbox2
