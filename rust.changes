@@ -1,3 +1,6 @@
+* Fri Jan 25 2021 Niels Breet <niels.breet@jolla.com> - 1.44.0+git9
+- [aarch64] Enable aarch64 build for rust cross. JB#50499
+
 * Mon Jan 25 2021 Matti Kosola <matti.kosola@jolla.com> - 1.44.0+git8
 - Do not require specific version of rust-std-static-i686-unknown-linux-gnu package. JB#50499
 - Remove cross package build requirements to avoid build loop. JB#50499
