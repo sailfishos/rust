@@ -36,7 +36,7 @@
 %global rust_aarch64_triple aarch64-unknown-linux-gnu
 %global rust_x86_triple i686-unknown-linux-gnu
 
-%define build_aarch64 0
+%define build_aarch64 1
 
 %global python python3
 
@@ -44,7 +44,7 @@
 %bcond_without lldb
 
 Name:           rust
-Version:        %{rust_version}+git8
+Version:        %{rust_version}+git9
 Release:        1
 Summary:        The Rust Programming Language
 License:        (ASL 2.0 or MIT) and (BSD and MIT)
