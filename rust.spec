@@ -44,7 +44,7 @@
 %bcond_without lldb
 
 Name:           rust
-Version:        %{rust_version}+git9
+Version:        %{rust_version}+git10
 Release:        1
 Summary:        The Rust Programming Language
 License:        (ASL 2.0 or MIT) and (BSD and MIT)
@@ -526,7 +526,7 @@ EOF
 mkdir %{buildroot}/.cargo
 cat <<'EOF' > %{buildroot}/.cargo/config
 [target.i686-unknown-linux-gnu]
-linker = "/usr/bin/host-cc"
+linker = "i686-unknown-linux-gnu-gcc"
 EOF
 chmod 755 %{buildroot}%{_bindir}/*
 
