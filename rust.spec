@@ -11,13 +11,13 @@
 %define rust_use_bootstrap 1
 %define bootstrap_arches i486
 
-%global bootstrap_rust 1.44.0
-%global bootstrap_cargo 1.44.0
+%global bootstrap_rust 1.52.1
+%global bootstrap_cargo 1.52.1
 
 # Only x86_64 and i686 are Tier 1 platforms at this time.
 # https://forge.rust-lang.org/platform-support.html
 
-%global rust_version 1.44.0
+%global rust_version 1.52.1
 
 %ifarch %ix86
 %define xbuildjobs %{nil}
@@ -44,7 +44,7 @@
 %bcond_without lldb
 
 Name:           rust
-Version:        %{rust_version}+git10
+Version:        %{rust_version}+git1
 Release:        1
 Summary:        The Rust Programming Language
 License:        (ASL 2.0 or MIT) and (BSD and MIT)
@@ -56,12 +56,11 @@ Source0:        rustc-%{rust_version}-src.tar.gz
 Source100:      rust-%{rust_version}-i686-unknown-linux-gnu.tar.gz
 Source200:      README.md
 
-Patch1: 0001-Use-a-non-existent-test-path-instead-of-clobbering-d.patch
 Patch2: 0002-Set-proper-llvm-targets.patch
 Patch3: 0003-Disable-statx-for-all-builds.-JB-50106.patch
 Patch4: 0004-Scratchbox2-needs-to-be-able-to-tell-rustc-the-defau.patch
 Patch5: 0005-Cargo-Force-the-target-when-building-for-CompileKind-Host.patch
-Patch6: 0006-Provide-ENV-controls-to-bypass-some-sb2-calls-betwee.patch
+#Patch6: 0006-Provide-ENV-controls-to-bypass-some-sb2-calls-betwee.patch
 # This is the real rustc spec - the stub one appears near the end.
 %ifarch %ix86
 
@@ -220,12 +219,11 @@ test -f '%{local_rust_root}/bin/rustc'
 
 %setup -q -n %{rustc_package}
 
-%patch1 -p1
 %patch2 -p1
 %patch3 -p1
 %patch4 -p1
 %patch5 -p1
-%patch6 -p1
+#%patch6 -p1
 
 sed -i.try-py3 -e '/try python2.7/i try python3 "$@"' ./configure
 
@@ -247,13 +245,11 @@ rm -rf vendor/openssl-src/openssl/
 # This only affects the transient rust-installer, but let it use our dynamic xz-libs
 sed -i.lzma -e '/LZMA_API_STATIC/d' src/bootstrap/tool.rs
 
-# rename bundled license for packaging
-cp -a vendor/backtrace-sys/src/libbacktrace/LICENSE{,-libbacktrace}
-
+# FIXME: Do we still need this? -xfade
 # Static linking to distro LLVM needs to add -lffi
 # https://github.com/rust-lang/rust/issues/34486
-sed -i.ffi -e '$a #[link(name = "ffi")] extern {}' \
-  src/librustc_llvm/lib.rs
+#sed -i.ffi -e '$a #[link(name = "ffi")] extern {}' \
+#  src/librustc_llvm/lib.rs
 
 # The configure macro will modify some autoconf-related files, which upsets
 # cargo when it tries to verify checksums in those files.  If we just truncate

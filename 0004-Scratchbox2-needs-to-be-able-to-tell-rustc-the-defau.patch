@@ -1,7 +1,7 @@
-From ee426fcbb8e03d1a7834c73225a65697b3dd4a1a Mon Sep 17 00:00:00 2001
-From: David Greaves <david.greaves@jolla.com>
-Date: Mon, 5 Oct 2020 10:14:39 +0100
-Subject: [PATCH 4/4] Scratchbox2 needs to be able to tell rustc the default
+From ac226bbc018e11311394126fe580763c5bc77a2c Mon Sep 17 00:00:00 2001
+From: Niels Breet <niels.breet@jolla.com>
+Date: Tue, 11 May 2021 13:10:49 +0300
+Subject: [PATCH] Scratchbox2 needs to be able to tell rustc the default
  target.
 
 Currently this defaults to the target rust was built with. Rather than
@@ -10,29 +10,29 @@ allows the same rustc binary to be used for all builds.
 
 Signed-off-by: David Greaves <david.greaves@jolla.com>
 ---
- src/librustc_session/config.rs | 9 ++++++++-
+ compiler/rustc_session/src/config.rs | 9 ++++++++-
  1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/src/librustc_session/config.rs b/src/librustc_session/config.rs
-index 2513cfa73e5..529d836dc82 100644
---- a/src/librustc_session/config.rs
-+++ b/src/librustc_session/config.rs
-@@ -1363,7 +1363,14 @@ fn parse_target_triple(matches: &getopts::Matches, error_format: ErrorOutputType
+diff --git a/compiler/rustc_session/src/config.rs b/compiler/rustc_session/src/config.rs
+index 85448b7..ec51c50 100644
+--- a/compiler/rustc_session/src/config.rs
++++ b/compiler/rustc_session/src/config.rs
+@@ -1537,7 +1537,14 @@ fn parse_target_triple(matches: &getopts::Matches, error_format: ErrorOutputType
              })
          }
          Some(target) => TargetTriple::TargetTriple(target),
 -        _ => TargetTriple::from_triple(host_triple()),
-+	// In SFOS we use SB2 and need to tell rust what the
++        // In SFOS we use SB2 and need to tell rust what the
 +        // 'default' target is. If the SB2_RUST_TARGET_TRIPLE
 +        // environment variable is set then it is used. Otherwise
 +        // the fallback is the host_triple as usual
 +        _ => match std::env::var("SB2_RUST_TARGET_TRIPLE") {
 +            Ok(tgt) => TargetTriple::TargetTriple(tgt),
 +            Err(_) => TargetTriple::from_triple(host_triple()),
-+	}
++        }
      }
  }
  
 -- 
-2.20.1
+1.9.1
 
