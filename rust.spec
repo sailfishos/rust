@@ -36,7 +36,8 @@
 %global rust_aarch64_triple aarch64-unknown-linux-gnu
 %global rust_x86_triple i686-unknown-linux-gnu
 
-%define build_aarch64 1
+%define build_armv7 0
+%define build_aarch64 0
 
 %global python python3
 
@@ -147,12 +148,14 @@ Summary:        Standard library for Rust
 This package includes the standard libraries for building
 %{rust_x86_triple} applications written in Rust.
 
+%if 0%{?build_armv7}
 %package std-static-%{rust_arm_triple}
 Summary:        Standard library for Rust
 
 %description std-static-%{rust_arm_triple}
 This package includes the standard libraries for building
 %{rust_arm_triple} applications written in Rust.
+%endif
 
 %if 0%{?build_aarch64}
 %package std-static-%{rust_aarch64_triple}
@@ -300,6 +303,7 @@ PATH=/opt/cross/bin/:$PATH
 ###
 
 # The configure macro sets CFLAGS to x86 which causes the ARM target to fail
+# FIXME: disabled arm build for now. -xfade
 ./configure --prefix=/usr --exec-prefix=/usr --bindir=/usr/bin --sbindir=/usr/sbin --sysconfdir=/etc --datadir=/usr/share --includedir=/usr/include --libdir=/usr/lib --libexecdir=/usr/libexec --localstatedir=/var --sharedstatedir=/var/lib --mandir=/usr/share/man --infodir=/usr/share/info \
  --disable-option-checking \
   --libdir=%{common_libdir} \
@@ -307,7 +311,7 @@ PATH=/opt/cross/bin/:$PATH
 %if 0%{?build_aarch64}
   --target=%{rust_x86_triple},%{rust_arm_triple}\,%{rust_aarch64_triple}\
 %else
-  --target=%{rust_x86_triple},%{rust_arm_triple}\
+  --target=%{rust_x86_triple}\
 %endif
   --python=%{python} \
   --local-rust-root=%{local_rust_root} \
@@ -330,8 +334,10 @@ PATH=/opt/cross/bin/:$PATH
   --enable-parallel-compiler \
   --set target.%{rust_x86_triple}.cc=/usr/bin/cc \
   --set target.%{rust_x86_triple}.ar=/usr/bin/ar \
+%if 0%{?build_armv7}
   --set target.%{rust_arm_triple}.cc=/opt/cross/bin/armv7hl-meego-linux-gnueabi-cc \
   --set target.%{rust_arm_triple}.ar=/opt/cross/bin/armv7hl-meego-linux-gnueabi-ar \
+%endif
 %if 0%{?build_aarch64}
   --set target.%{rust_aarch64_triple}.cc=/opt/cross/bin/aarch64-meego-linux-gnu-cc \
   --set target.%{rust_aarch64_triple}.ar=/opt/cross/bin/aarch64-meego-linux-gnu-ar \
@@ -375,7 +381,9 @@ find %{buildroot}%{_libdir} -maxdepth 1 -type f -name '*.so' \
 
 # The non-x86 .so files would be used by rustc if it had been built
 # for those targets
+%if 0%{?build_armv7}
 rm %{buildroot}%{rustlibdir}/%{rust_arm_triple}/lib/*.so
+%endif
 %if 0%{?build_aarch64}
 rm %{buildroot}%{rustlibdir}/%{rust_aarch64_triple}/lib/*.so
 %endif
@@ -442,11 +450,13 @@ rm -fr %{buildroot}%{_mandir}/man1
 %dir %{rustlibdir}/%{rust_x86_triple}/lib
 %{rustlibdir}/%{rust_x86_triple}/lib/*.rlib
 
+%if 0%{?build_armv7}
 %files std-static-%{rust_arm_triple}
 %dir %{rustlibdir}
 %dir %{rustlibdir}/%{rust_arm_triple}
 %dir %{rustlibdir}/%{rust_arm_triple}/lib
 %{rustlibdir}/%{rust_arm_triple}/lib/*.rlib
+%endif
 
 %if 0%{?build_aarch64}
 %files std-static-%{rust_aarch64_triple}
