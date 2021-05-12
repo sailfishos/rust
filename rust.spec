@@ -408,12 +408,24 @@ mkdir -p %{buildroot}%{_datadir}/cargo/registry
 
 %if %without lldb
 rm -f %{buildroot}%{_bindir}/rust-lldb
-rm -f %{buildroot}%{rustlibdir}/etc/lldb_*.py*
+rm -f %{buildroot}%{rustlibdir}/etc/lldb_*
 %endif
 
 # Remove unwanted documentation files
 rm -f %{buildroot}%{_bindir}/rustdoc
 rm -fr %{buildroot}%{_mandir}/man1
+
+# We don't want Rust copies of LLVM tools (rust-lld, rust-llvm-dwp)
+rm -f %{buildroot}%{rustlibdir}/%{rust_x86_triple}/bin/rust-ll*
+%if 0%{?build_armv7}
+rm -f %{buildroot}%{rustlibdir}/%{rust_arm_triple}/bin/rust-ll*
+%endif
+%if 0%{?build_aarch64}
+rm -f %{buildroot}%{rustlibdir}/%{rust_aarch64_triple}/bin/rust-ll*
+%endif
+
+# Remove cargo-credential-1password
+rm -f %{buildroot}%{_libexecdir}/cargo-credential-1password
 
 %check
 # Disabled for efficient rebuilds until the hanging fix is completed
@@ -434,7 +446,6 @@ rm -fr %{buildroot}%{_mandir}/man1
 
 %files
 %license COPYRIGHT LICENSE-APACHE LICENSE-MIT
-%license vendor/backtrace-sys/src/libbacktrace/LICENSE-libbacktrace
 %doc README.md
 %{_bindir}/rustc
 %{_libdir}/*.so
@@ -479,7 +490,7 @@ rm -fr %{buildroot}%{_mandir}/man1
 %files debugger-common
 %dir %{rustlibdir}
 %dir %{rustlibdir}/etc
-%{rustlibdir}/etc/debugger_*.py*
+%{rustlibdir}/etc/rust_*.py*
 
 
 %files gdb
@@ -491,7 +502,7 @@ rm -fr %{buildroot}%{_mandir}/man1
 %if %with lldb
 %files lldb
 %{_bindir}/rust-lldb
-%{rustlibdir}/etc/lldb_*.py*
+%{rustlibdir}/etc/lldb_*
 %endif
 
 # This is the non x86 spec to produce dummy rust/cargo binaries
