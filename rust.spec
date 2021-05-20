@@ -36,7 +36,7 @@
 %global rust_aarch64_triple aarch64-unknown-linux-gnu
 %global rust_x86_triple i686-unknown-linux-gnu
 
-%define build_armv7 0
+%define build_armv7 1
 %define build_aarch64 0
 
 %global python python3
@@ -311,7 +311,7 @@ PATH=/opt/cross/bin/:$PATH
 %if 0%{?build_aarch64}
   --target=%{rust_x86_triple},%{rust_arm_triple}\,%{rust_aarch64_triple}\
 %else
-  --target=%{rust_x86_triple}\
+  --target=%{rust_x86_triple},%{rust_arm_triple}\
 %endif
   --python=%{python} \
   --local-rust-root=%{local_rust_root} \
