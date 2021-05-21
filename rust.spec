@@ -353,6 +353,10 @@ CFLAGS=
 CXXFLAGS=
 FFLAGS=
 
+# arm cc needs to find ld so ensure PATH points to /opt/cross/bin too
+PATH=/opt/cross/bin/:$PATH
+
+
 DESTDIR=%{buildroot} %{python} ./x.py install
 
 # Make sure the shared libraries are in the proper libdir
