@@ -61,7 +61,7 @@ Patch2: 0002-Set-proper-llvm-targets.patch
 Patch3: 0003-Disable-statx-for-all-builds.-JB-50106.patch
 Patch4: 0004-Scratchbox2-needs-to-be-able-to-tell-rustc-the-defau.patch
 Patch5: 0005-Cargo-Force-the-target-when-building-for-CompileKind-Host.patch
-#Patch6: 0006-Provide-ENV-controls-to-bypass-some-sb2-calls-betwee.patch
+Patch6: 0006-Provide-ENV-controls-to-bypass-some-sb2-calls-betwee.patch
 # This is the real rustc spec - the stub one appears near the end.
 %ifarch %ix86
 
@@ -226,7 +226,7 @@ test -f '%{local_rust_root}/bin/rustc'
 %patch3 -p1
 %patch4 -p1
 %patch5 -p1
-#%patch6 -p1
+%patch6 -p1
 
 sed -i.try-py3 -e '/try python2.7/i try python3 "$@"' ./configure
 
@@ -247,12 +247,6 @@ rm -rf vendor/openssl-src/openssl/
 
 # This only affects the transient rust-installer, but let it use our dynamic xz-libs
 sed -i.lzma -e '/LZMA_API_STATIC/d' src/bootstrap/tool.rs
-
-# FIXME: Do we still need this? -xfade
-# Static linking to distro LLVM needs to add -lffi
-# https://github.com/rust-lang/rust/issues/34486
-#sed -i.ffi -e '$a #[link(name = "ffi")] extern {}' \
-#  src/librustc_llvm/lib.rs
 
 # The configure macro will modify some autoconf-related files, which upsets
 # cargo when it tries to verify checksums in those files.  If we just truncate
@@ -303,7 +297,6 @@ PATH=/opt/cross/bin/:$PATH
 ###
 
 # The configure macro sets CFLAGS to x86 which causes the ARM target to fail
-# FIXME: disabled arm build for now. -xfade
 ./configure --prefix=/usr --exec-prefix=/usr --bindir=/usr/bin --sbindir=/usr/sbin --sysconfdir=/etc --datadir=/usr/share --includedir=/usr/include --libdir=/usr/lib --libexecdir=/usr/libexec --localstatedir=/var --sharedstatedir=/var/lib --mandir=/usr/share/man --infodir=/usr/share/info \
  --disable-option-checking \
   --libdir=%{common_libdir} \
@@ -355,7 +348,6 @@ FFLAGS=
 
 # arm cc needs to find ld so ensure PATH points to /opt/cross/bin too
 PATH=/opt/cross/bin/:$PATH
-
 
 DESTDIR=%{buildroot} %{python} ./x.py install
 
