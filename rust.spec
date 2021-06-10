@@ -11,13 +11,13 @@
 %define rust_use_bootstrap 1
 %define bootstrap_arches i486
 
-%global bootstrap_rust 1.44.0
-%global bootstrap_cargo 1.44.0
+%global bootstrap_rust 1.52.1
+%global bootstrap_cargo 1.52.1
 
 # Only x86_64 and i686 are Tier 1 platforms at this time.
 # https://forge.rust-lang.org/platform-support.html
 
-%global rust_version 1.44.0
+%global rust_version 1.52.1
 
 %ifarch %ix86
 %define xbuildjobs %{nil}
@@ -36,6 +36,7 @@
 %global rust_aarch64_triple aarch64-unknown-linux-gnu
 %global rust_x86_triple i686-unknown-linux-gnu
 
+%define build_armv7 1
 %define build_aarch64 1
 
 %global python python3
@@ -44,7 +45,7 @@
 %bcond_without lldb
 
 Name:           rust
-Version:        %{rust_version}+git10
+Version:        %{rust_version}+git1
 Release:        1
 Summary:        The Rust Programming Language
 License:        (ASL 2.0 or MIT) and (BSD and MIT)
@@ -56,7 +57,6 @@ Source0:        rustc-%{rust_version}-src.tar.gz
 Source100:      rust-%{rust_version}-i686-unknown-linux-gnu.tar.gz
 Source200:      README.md
 
-Patch1: 0001-Use-a-non-existent-test-path-instead-of-clobbering-d.patch
 Patch2: 0002-Set-proper-llvm-targets.patch
 Patch3: 0003-Disable-statx-for-all-builds.-JB-50106.patch
 Patch4: 0004-Scratchbox2-needs-to-be-able-to-tell-rustc-the-defau.patch
@@ -148,12 +148,14 @@ Summary:        Standard library for Rust
 This package includes the standard libraries for building
 %{rust_x86_triple} applications written in Rust.
 
+%if 0%{?build_armv7}
 %package std-static-%{rust_arm_triple}
 Summary:        Standard library for Rust
 
 %description std-static-%{rust_arm_triple}
 This package includes the standard libraries for building
 %{rust_arm_triple} applications written in Rust.
+%endif
 
 %if 0%{?build_aarch64}
 %package std-static-%{rust_aarch64_triple}
@@ -218,14 +220,7 @@ test -f '%{local_rust_root}/bin/cargo'
 test -f '%{local_rust_root}/bin/rustc'
 %endif
 
-%setup -q -n %{rustc_package}
-
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
-%patch4 -p1
-%patch5 -p1
-%patch6 -p1
+%autosetup -p1 -n %{rustc_package}
 
 sed -i.try-py3 -e '/try python2.7/i try python3 "$@"' ./configure
 
@@ -246,14 +241,6 @@ rm -rf vendor/openssl-src/openssl/
 
 # This only affects the transient rust-installer, but let it use our dynamic xz-libs
 sed -i.lzma -e '/LZMA_API_STATIC/d' src/bootstrap/tool.rs
-
-# rename bundled license for packaging
-cp -a vendor/backtrace-sys/src/libbacktrace/LICENSE{,-libbacktrace}
-
-# Static linking to distro LLVM needs to add -lffi
-# https://github.com/rust-lang/rust/issues/34486
-sed -i.ffi -e '$a #[link(name = "ffi")] extern {}' \
-  src/librustc_llvm/lib.rs
 
 # The configure macro will modify some autoconf-related files, which upsets
 # cargo when it tries to verify checksums in those files.  If we just truncate
@@ -334,8 +321,10 @@ PATH=/opt/cross/bin/:$PATH
   --enable-parallel-compiler \
   --set target.%{rust_x86_triple}.cc=/usr/bin/cc \
   --set target.%{rust_x86_triple}.ar=/usr/bin/ar \
+%if 0%{?build_armv7}
   --set target.%{rust_arm_triple}.cc=/opt/cross/bin/armv7hl-meego-linux-gnueabi-cc \
   --set target.%{rust_arm_triple}.ar=/opt/cross/bin/armv7hl-meego-linux-gnueabi-ar \
+%endif
 %if 0%{?build_aarch64}
   --set target.%{rust_aarch64_triple}.cc=/opt/cross/bin/aarch64-meego-linux-gnu-cc \
   --set target.%{rust_aarch64_triple}.ar=/opt/cross/bin/aarch64-meego-linux-gnu-ar \
@@ -350,6 +339,9 @@ export RUSTFLAGS="%{rustflags}"
 CFLAGS=
 CXXFLAGS=
 FFLAGS=
+
+# arm cc needs to find ld so ensure PATH points to /opt/cross/bin too
+PATH=/opt/cross/bin/:$PATH
 
 DESTDIR=%{buildroot} %{python} ./x.py install
 
@@ -379,7 +371,9 @@ find %{buildroot}%{_libdir} -maxdepth 1 -type f -name '*.so' \
 
 # The non-x86 .so files would be used by rustc if it had been built
 # for those targets
+%if 0%{?build_armv7}
 rm %{buildroot}%{rustlibdir}/%{rust_arm_triple}/lib/*.so
+%endif
 %if 0%{?build_aarch64}
 rm %{buildroot}%{rustlibdir}/%{rust_aarch64_triple}/lib/*.so
 %endif
@@ -404,12 +398,24 @@ mkdir -p %{buildroot}%{_datadir}/cargo/registry
 
 %if %without lldb
 rm -f %{buildroot}%{_bindir}/rust-lldb
-rm -f %{buildroot}%{rustlibdir}/etc/lldb_*.py*
+rm -f %{buildroot}%{rustlibdir}/etc/lldb_*
 %endif
 
 # Remove unwanted documentation files
 rm -f %{buildroot}%{_bindir}/rustdoc
 rm -fr %{buildroot}%{_mandir}/man1
+
+# We don't want Rust copies of LLVM tools (rust-lld, rust-llvm-dwp)
+rm -f %{buildroot}%{rustlibdir}/%{rust_x86_triple}/bin/rust-ll*
+%if 0%{?build_armv7}
+rm -f %{buildroot}%{rustlibdir}/%{rust_arm_triple}/bin/rust-ll*
+%endif
+%if 0%{?build_aarch64}
+rm -f %{buildroot}%{rustlibdir}/%{rust_aarch64_triple}/bin/rust-ll*
+%endif
+
+# Remove cargo-credential-1password
+rm -f %{buildroot}%{_libexecdir}/cargo-credential-1password
 
 %check
 # Disabled for efficient rebuilds until the hanging fix is completed
@@ -430,7 +436,6 @@ rm -fr %{buildroot}%{_mandir}/man1
 
 %files
 %license COPYRIGHT LICENSE-APACHE LICENSE-MIT
-%license vendor/backtrace-sys/src/libbacktrace/LICENSE-libbacktrace
 %doc README.md
 %{_bindir}/rustc
 %{_libdir}/*.so
@@ -446,11 +451,13 @@ rm -fr %{buildroot}%{_mandir}/man1
 %dir %{rustlibdir}/%{rust_x86_triple}/lib
 %{rustlibdir}/%{rust_x86_triple}/lib/*.rlib
 
+%if 0%{?build_armv7}
 %files std-static-%{rust_arm_triple}
 %dir %{rustlibdir}
 %dir %{rustlibdir}/%{rust_arm_triple}
 %dir %{rustlibdir}/%{rust_arm_triple}/lib
 %{rustlibdir}/%{rust_arm_triple}/lib/*.rlib
+%endif
 
 %if 0%{?build_aarch64}
 %files std-static-%{rust_aarch64_triple}
@@ -473,7 +480,7 @@ rm -fr %{buildroot}%{_mandir}/man1
 %files debugger-common
 %dir %{rustlibdir}
 %dir %{rustlibdir}/etc
-%{rustlibdir}/etc/debugger_*.py*
+%{rustlibdir}/etc/rust_*.py*
 
 
 %files gdb
@@ -485,7 +492,7 @@ rm -fr %{buildroot}%{_mandir}/man1
 %if %with lldb
 %files lldb
 %{_bindir}/rust-lldb
-%{rustlibdir}/etc/lldb_*.py*
+%{rustlibdir}/etc/lldb_*
 %endif
 
 # This is the non x86 spec to produce dummy rust/cargo binaries

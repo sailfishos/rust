@@ -1,3 +1,6 @@
+* Tue May 11 2021 Niels Breet <niels.breet@jolla.com> - 1.52.1+git1
+- [rust] Initial packaging of rust 1.52.1. JB#54225 JOLLA-139
+
 * Fri Feb 05 2021 Martin Kampas <martin.kampas@jolla.com> - 1.44.0+git10
 - [rust] Fix host-gcc use under SDK. JB#52983
 
