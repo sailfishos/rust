@@ -62,6 +62,7 @@ Patch3: 0003-Disable-statx-for-all-builds.-JB-50106.patch
 Patch4: 0004-Scratchbox2-needs-to-be-able-to-tell-rustc-the-defau.patch
 Patch5: 0005-Cargo-Force-the-target-when-building-for-CompileKind-Host.patch
 Patch6: 0006-Provide-ENV-controls-to-bypass-some-sb2-calls-betwee.patch
+Patch7: 0007-Scratchbox2-needs-to-be-able-to-tell-cargo-the-defau.patch
 # This is the real rustc spec - the stub one appears near the end.
 %ifarch %ix86
 
