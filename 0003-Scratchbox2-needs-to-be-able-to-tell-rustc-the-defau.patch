@@ -1,4 +1,4 @@
-From ac226bbc018e11311394126fe580763c5bc77a2c Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Niels Breet <niels.breet@jolla.com>
 Date: Tue, 11 May 2021 13:10:49 +0300
 Subject: [PATCH] Scratchbox2 needs to be able to tell rustc the default
@@ -9,15 +9,16 @@ hardcode this for a cross-compiler, using an environment variable
 allows the same rustc binary to be used for all builds.
 
 Signed-off-by: David Greaves <david.greaves@jolla.com>
+Signed-off-by: Ruben De Smet <ruben.de.smet@rubdos.be>
 ---
  compiler/rustc_session/src/config.rs | 9 ++++++++-
  1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/compiler/rustc_session/src/config.rs b/compiler/rustc_session/src/config.rs
-index 85448b7..ec51c50 100644
+index 4182a5d07118e0652ff63c4bec28bde0775d0c59..9904ab2e70d7aafab4ec63e86d0cdb383ca2285b 100644
 --- a/compiler/rustc_session/src/config.rs
 +++ b/compiler/rustc_session/src/config.rs
-@@ -1537,7 +1537,14 @@ fn parse_target_triple(matches: &getopts::Matches, error_format: ErrorOutputType
+@@ -1848,7 +1848,14 @@ pub fn parse_target_triple(
              })
          }
          Some(target) => TargetTriple::TargetTriple(target),
@@ -33,6 +34,3 @@ index 85448b7..ec51c50 100644
      }
  }
  
--- 
-1.9.1
-
