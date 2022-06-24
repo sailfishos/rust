@@ -45,7 +45,7 @@
 %bcond_without lldb
 
 Name:           rust
-Version:        %{rust_version}+git2
+Version:        %{rust_version}+git1
 Release:        1
 Summary:        The Rust Programming Language
 License:        (ASL 2.0 or MIT) and (BSD and MIT)
@@ -90,7 +90,7 @@ BuildRequires:  pkgconfig(liblzma)
 BuildRequires:  pkgconfig(openssl)
 BuildRequires:  pkgconfig(zlib)
 BuildRequires:  python3-base
-BuildRequires:  llvm-devel
+BuildRequires:  llvm-devel >= 12
 BuildRequires:  libffi-devel
 
 # make check needs "ps" for src/test/run-pass/wait-forked-but-failed-child.rs
