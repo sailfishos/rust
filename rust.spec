@@ -32,12 +32,24 @@
 %endif
 %endif
 
-%global rust_arm_triple armv7-unknown-linux-gnueabihf
-%global rust_aarch64_triple aarch64-unknown-linux-gnu
-%global rust_x86_triple i686-unknown-linux-gnu
+# The prjconf can override the "enabled by default" by setting
+# rust_disable_armv7 to 1
+%define build_armv7 %{?rust_disable_armv7:0}%{!?rust_disable_armv7:1}
+%define build_aarch64 %{?rust_disable_aarch64:0}%{!?rust_disable_aarch64:1}
 
-%define build_armv7 1
-%define build_aarch64 1
+%if 0%{?build_armv7}
+%global rust_arm_triple armv7-unknown-linux-gnueabihf
+%define rust_arm_triple_comma ,%{rust_arm_triple}
+%else
+%define rust_arm_triple_comma ""
+%endif
+%if 0%{?build_aarch64}
+%global rust_aarch64_triple aarch64-unknown-linux-gnu
+%define rust_aarch64_triple_comma ,%{rust_aarch64_triple}
+%else
+%define rust_aarch64_triple_comma ""
+%endif
+%global rust_x86_triple i686-unknown-linux-gnu
 
 %global python python3
 
@@ -296,11 +308,7 @@ PATH=/opt/cross/bin/:$PATH
  --disable-option-checking \
   --libdir=%{common_libdir} \
   --build=%{rust_x86_triple} --host=%{rust_x86_triple}\
-%if 0%{?build_aarch64}
-  --target=%{rust_x86_triple},%{rust_arm_triple}\,%{rust_aarch64_triple}\
-%else
-  --target=%{rust_x86_triple},%{rust_arm_triple}\
-%endif
+  --target=%{rust_x86_triple}%{rust_arm_triple_comma}%{rust_aarch64_triple_comma}\
   --python=%{python} \
   --local-rust-root=%{local_rust_root} \
   --enable-local-rebuild \
