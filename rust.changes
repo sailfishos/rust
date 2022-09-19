@@ -1,3 +1,6 @@
+* Mon Sep 19 2022 David Greaves <david.greaves@jolla.com> - 1.52.1+git3
+- [rust] Allow prjconf to disable the building of the armv7/aarch64. Fixes JB#58809
+
 * Tue Feb 08 2022 Ruben De Smet <ruben.de.smet@rubdos.be> - 1.52.1+git2
 - [rust] Let Cargo obey the SB2_TARGET variable. Fixes JB#57427
 
