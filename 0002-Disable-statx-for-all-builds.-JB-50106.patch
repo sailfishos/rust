@@ -23,7 +23,7 @@ diff --git a/library/std/src/sys/unix/fs.rs b/library/std/src/sys/unix/fs.rs
 index 7181451de575fcb8ff7df27ba5a66b18a08904be..141e1726db49f1ac483a5788bdbc31388a1c942e 100644
 --- a/library/std/src/sys/unix/fs.rs
 +++ b/library/std/src/sys/unix/fs.rs
-@@ -13,23 +13,11 @@
+@@ -13,25 +13,11 @@
  use crate::sys::{cvt, cvt_r};
  use crate::sys_common::{AsInner, AsInnerMut, FromInner, IntoInner};
  
@@ -31,9 +31,10 @@ index 7181451de575fcb8ff7df27ba5a66b18a08904be..141e1726db49f1ac483a5788bdbc3138
 -    all(target_os = "linux", target_env = "gnu"),
 -    target_os = "macos",
 -    target_os = "ios",
+-    target_os = "watchos",
 -))]
 -use crate::sys::weak::syscall;
- #[cfg(target_os = "macos")]
+ #[cfg(any(target_os = "android", target_os = "macos"))]
  use crate::sys::weak::weak;
  
  use libc::{c_int, mode_t};
@@ -41,13 +42,14 @@ index 7181451de575fcb8ff7df27ba5a66b18a08904be..141e1726db49f1ac483a5788bdbc3138
 -#[cfg(any(
 -    target_os = "macos",
 -    target_os = "ios",
+-    target_os = "watchos",
 -    all(target_os = "linux", target_env = "gnu")
 -))]
 -use libc::c_char;
  #[cfg(any(target_os = "linux", target_os = "emscripten", target_os = "android"))]
  use libc::dirfd;
  #[cfg(any(target_os = "linux", target_os = "emscripten"))]
-@@ -85,20 +73,9 @@
+@@ -87,20 +73,9 @@
  // https://github.com/rust-lang/rust/pull/67774
  macro_rules! cfg_has_statx {
      ({ $($then_tt:tt)* } else { $($else_tt:tt)* }) => {

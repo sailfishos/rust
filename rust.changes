@@ -16,7 +16,7 @@
 * Fri Feb 05 2021 Martin Kampas <martin.kampas@jolla.com> - 1.44.0+git10
 - [rust] Fix host-gcc use under SDK. JB#52983
 
-* Fri Jan 25 2021 Niels Breet <niels.breet@jolla.com> - 1.44.0+git9
+* Fri Jan 29 2021 Niels Breet <niels.breet@jolla.com> - 1.44.0+git9
 - [aarch64] Enable aarch64 build for rust cross. JB#50499
 
 * Mon Jan 25 2021 Matti Kosola <matti.kosola@jolla.com> - 1.44.0+git8
