@@ -1,3 +1,6 @@
+* Fri Dec 16 2022 Ville Nummela <ville.nummela@jolla.com> - 1.52.1+git4
+- [rust] Add cross compilers to ix86 BuildRequires. JB#59591
+
 * Mon Sep 19 2022 David Greaves <david.greaves@jolla.com> - 1.52.1+git3
 - [rust] Allow prjconf to disable the building of the armv7/aarch64. Fixes JB#58809
 

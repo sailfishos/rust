@@ -57,7 +57,7 @@
 %bcond_without lldb
 
 Name:           rust
-Version:        %{rust_version}+git3
+Version:        %{rust_version}+git4
 Release:        1
 Summary:        The Rust Programming Language
 License:        (ASL 2.0 or MIT) and (BSD and MIT)
