@@ -90,6 +90,24 @@ BuildRequires:  %{name} >= %{bootstrap_rust}
 %endif
 
 BuildRequires:  ccache
+%if 0%{?build_armv7}
+BuildRequires:  cross-armv7hl-gcc
+BuildRequires:  cross-armv7hl-binutils
+BuildRequires:  cross-armv7hl-as
+BuildRequires:  cross-armv7hl-glibc
+BuildRequires:  cross-armv7hl-glibc-devel
+BuildRequires:  cross-armv7hl-glibc-headers
+BuildRequires:  cross-armv7hl-kernel-headers
+%endif
+%if 0%{?build_aarch64}
+BuildRequires:  cross-aarch64-gcc
+BuildRequires:  cross-aarch64-binutils
+BuildRequires:  cross-aarch64-as
+BuildRequires:  cross-aarch64-glibc
+BuildRequires:  cross-aarch64-glibc-devel
+BuildRequires:  cross-aarch64-glibc-headers
+BuildRequires:  cross-aarch64-kernel-headers
+%endif
 BuildRequires:  make
 BuildRequires:  cmake
 BuildRequires:  gcc
