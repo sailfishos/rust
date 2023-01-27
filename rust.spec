@@ -11,13 +11,13 @@
 %define rust_use_bootstrap 1
 %define bootstrap_arches i486
 
-%global bootstrap_rust 1.61.0
-%global bootstrap_cargo 1.61.0
+%global bootstrap_rust 1.67.0
+%global bootstrap_cargo 1.67.0
 
 # Only x86_64 and i686 are Tier 1 platforms at this time.
 # https://forge.rust-lang.org/platform-support.html
 
-%global rust_version 1.61.0
+%global rust_version 1.67.0
 
 %ifarch %ix86
 %define xbuildjobs %{nil}
@@ -75,7 +75,9 @@ Patch3: 0003-Scratchbox2-needs-to-be-able-to-tell-rustc-the-defau.patch
 Patch4: 0004-Force-the-target-when-building-for-CompileKind-Host.patch
 Patch5: 0005-Provide-ENV-controls-to-bypass-some-sb2-calls-betwee.patch
 Patch6: 0006-Scratchbox2-needs-to-be-able-to-tell-cargo-the-defau.patch
-Patch7: 0007-Disable-aarch64-outline-atomics-for-now.patch
+Patch7: 0007-fix-unsoundness-in-bootstrap-cache-code.patch
+Patch8: 0008-Revert-Use-statx-s-64-bit-times-on-32-bit-linux-gnu.patch
+Patch9: 0009-Disable-aarch64-outline-atomics-for-now.patch
 # This is the real rustc spec - the stub one appears near the end.
 %ifarch %ix86
 
@@ -444,6 +446,9 @@ rm -f %{buildroot}%{rustlibdir}/%{rust_aarch64_triple}/bin/rust-ll*
 
 # Remove cargo-credential-1password
 rm -f %{buildroot}%{_libexecdir}/cargo-credential-1password
+
+# Remove rust analyzer proc macro server
+rm -f %{buildroot}%{_libexecdir}/rust-analyzer-proc-macro-srv
 
 %check
 # Disabled for efficient rebuilds until the hanging fix is completed

@@ -8,19 +8,20 @@ Currently hardwired to be i686-unknown-linux-gnu
 Signed-off-by: David Greaves <david.greaves@jolla.com>
 Signed-off-by: Ruben De Smet <ruben.de.smet@rubdos.be>
 ---
- src/tools/cargo | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ src/tools/cargo/src/cargo/core/compiler/mod.rs | 3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/src/tools/cargo/src/cargo/core/compiler/mod.rs b/src/tools/cargo/src/cargo/core/compiler/mod.rs
+index 6fac1d801..aad910fe5 100644
 --- a/src/tools/cargo/src/cargo/core/compiler/mod.rs
 +++ b/src/tools/cargo/src/cargo/core/compiler/mod.rs
-@@ -989,6 +989,9 @@ fn build_base_args(
-
+@@ -1031,6 +1031,9 @@ fn build_base_args(
+ 
      if let CompileKind::Target(n) = unit.kind {
          cmd.arg("--target").arg(n.rustc_target());
 +    } else {
 +        debug!("kind is {:?} - Forcing this to be 686", unit.kind);
 +        cmd.arg("--target").arg("i686-unknown-linux-gnu");
      }
-
+ 
      opt(
