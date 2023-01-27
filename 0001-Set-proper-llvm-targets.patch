@@ -10,7 +10,7 @@ Signed-off-by: Ruben De Smet <ruben.de.smet@rubdos.be>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/config.toml.example b/config.toml.example
-index 6e53d9b442f1609ec929f1c021984391d038e879..02b3a376409f5e523921aca8c89c2922c950aab3 100644
+index a46813e4d..8a44c7d40 100644
 --- a/config.toml.example
 +++ b/config.toml.example
 @@ -103,7 +103,7 @@ changelog-seen = 2
