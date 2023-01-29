@@ -1,0 +1,611 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Matti=20Lehtim=C3=A4ki?= <matti.lehtimaki@jolla.com>
+Date: Mon, 30 Jan 2023 00:29:10 +0200
+Subject: [PATCH] Revert "Only apply `ProceduralMasquerade` hack to older
+ versions of `rental`"
+
+This reverts commit 10dad22b6669defeee296a91b2e2c92f8fd46e43.
+---
+ compiler/rustc_expand/src/base.rs             |  46 ++---
+ .../issue-73933-procedural-masquerade.rs      |   9 +-
+ .../issue-73933-procedural-masquerade.stderr  |  91 +++++++++
+ .../issue-73933-procedural-masquerade.stdout  |  11 +-
+ .../ui/proc-macro/pretty-print-hack-hide.rs   |  12 --
+ .../proc-macro/pretty-print-hack-hide.stdout  |  21 --
+ .../ui/proc-macro/pretty-print-hack-show.rs   |  17 --
+ .../proc-macro/pretty-print-hack-show.stderr  | 179 ------------------
+ .../proc-macro/pretty-print-hack-show.stdout  |  44 -----
+ .../allsorts-rental-0.5.6/src/lib.rs          |  14 --
+ .../pretty-print-hack/rental-0.5.5/src/lib.rs |  14 --
+ .../pretty-print-hack/rental-0.5.6/src/lib.rs |  14 --
+ 12 files changed, 116 insertions(+), 356 deletions(-)
+ create mode 100644 src/test/ui/proc-macro/issue-73933-procedural-masquerade.stderr
+ delete mode 100644 src/test/ui/proc-macro/pretty-print-hack-hide.rs
+ delete mode 100644 src/test/ui/proc-macro/pretty-print-hack-hide.stdout
+ delete mode 100644 src/test/ui/proc-macro/pretty-print-hack-show.rs
+ delete mode 100644 src/test/ui/proc-macro/pretty-print-hack-show.stderr
+ delete mode 100644 src/test/ui/proc-macro/pretty-print-hack-show.stdout
+ delete mode 100644 src/test/ui/proc-macro/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs
+ delete mode 100644 src/test/ui/proc-macro/pretty-print-hack/rental-0.5.5/src/lib.rs
+ delete mode 100644 src/test/ui/proc-macro/pretty-print-hack/rental-0.5.6/src/lib.rs
+
+diff --git a/compiler/rustc_expand/src/base.rs b/compiler/rustc_expand/src/base.rs
+index c8de60ccb89..052ca229f01 100644
+--- a/compiler/rustc_expand/src/base.rs
++++ b/compiler/rustc_expand/src/base.rs
+@@ -22,7 +22,7 @@
+ use rustc_span::hygiene::{AstPass, ExpnData, ExpnKind, LocalExpnId};
+ use rustc_span::source_map::SourceMap;
+ use rustc_span::symbol::{kw, sym, Ident, Symbol};
+-use rustc_span::{BytePos, FileName, RealFileName, Span, DUMMY_SP};
++use rustc_span::{BytePos, FileName, Span, DUMMY_SP};
+ use smallvec::{smallvec, SmallVec};
+ 
+ use std::default::Default;
+@@ -1423,40 +1423,16 @@ fn pretty_printing_compatibility_hack(item: &Item, sess: &ParseSess) -> bool {
+         if let ast::ItemKind::Enum(enum_def, _) = &item.kind {
+             if let [variant] = &*enum_def.variants {
+                 if variant.ident.name == sym::Input {
+-                    let filename = sess.source_map().span_to_filename(item.ident.span);
+-                    if let FileName::Real(RealFileName::LocalPath(path)) = filename {
+-                        if let Some(c) = path
+-                            .components()
+-                            .flat_map(|c| c.as_os_str().to_str())
+-                            .find(|c| c.starts_with("rental") || c.starts_with("allsorts-rental"))
+-                        {
+-                            let crate_matches = if c.starts_with("allsorts-rental") {
+-                                true
+-                            } else {
+-                                let mut version = c.trim_start_matches("rental-").split(".");
+-                                version.next() == Some("0")
+-                                    && version.next() == Some("5")
+-                                    && version
+-                                        .next()
+-                                        .and_then(|c| c.parse::<u32>().ok())
+-                                        .map_or(false, |v| v < 6)
+-                            };
+-
+-                            if crate_matches {
+-                                sess.buffer_lint_with_diagnostic(
+-                                        &PROC_MACRO_BACK_COMPAT,
+-                                        item.ident.span,
+-                                        ast::CRATE_NODE_ID,
+-                                        "using an old version of `rental`",
+-                                        BuiltinLintDiagnostics::ProcMacroBackCompat(
+-                                        "older versions of the `rental` crate will stop compiling in future versions of Rust; \
+-                                        please update to `rental` v0.5.6, or switch to one of the `rental` alternatives".to_string()
+-                                        )
+-                                    );
+-                                return true;
+-                            }
+-                        }
+-                    }
++                    sess.buffer_lint_with_diagnostic(
++                        &PROC_MACRO_BACK_COMPAT,
++                        item.ident.span,
++                        ast::CRATE_NODE_ID,
++                        "using `procedural-masquerade` crate",
++                        BuiltinLintDiagnostics::ProcMacroBackCompat(
++                        "The `procedural-masquerade` crate has been unnecessary since Rust 1.30.0. \
++                        Versions of this crate below 0.1.7 will eventually stop compiling.".to_string())
++                    );
++                    return true;
+                 }
+             }
+         }
+diff --git a/src/test/ui/proc-macro/issue-73933-procedural-masquerade.rs b/src/test/ui/proc-macro/issue-73933-procedural-masquerade.rs
+index a573c6e1c0b..0c1c51c01a8 100644
+--- a/src/test/ui/proc-macro/issue-73933-procedural-masquerade.rs
++++ b/src/test/ui/proc-macro/issue-73933-procedural-masquerade.rs
+@@ -1,11 +1,18 @@
+ // aux-build:test-macros.rs
+-// check-pass
+ 
+ #[macro_use]
+ extern crate test_macros;
+ 
+ #[derive(Print)]
+ enum ProceduralMasqueradeDummyType {
++//~^ ERROR using
++//~| WARN this was previously
++//~| ERROR using
++//~| WARN this was previously
++//~| ERROR using
++//~| WARN this was previously
++//~| ERROR using
++//~| WARN this was previously
+     Input
+ }
+ 
+diff --git a/src/test/ui/proc-macro/issue-73933-procedural-masquerade.stderr b/src/test/ui/proc-macro/issue-73933-procedural-masquerade.stderr
+new file mode 100644
+index 00000000000..ebb8e825e6a
+--- /dev/null
++++ b/src/test/ui/proc-macro/issue-73933-procedural-masquerade.stderr
+@@ -0,0 +1,91 @@
++error: using `procedural-masquerade` crate
++  --> $DIR/issue-73933-procedural-masquerade.rs:7:6
++   |
++LL | enum ProceduralMasqueradeDummyType {
++   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++   |
++   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
++   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
++   = note: The `procedural-masquerade` crate has been unnecessary since Rust 1.30.0. Versions of this crate below 0.1.7 will eventually stop compiling.
++   = note: `#[deny(proc_macro_back_compat)]` on by default
++
++error: using `procedural-masquerade` crate
++  --> $DIR/issue-73933-procedural-masquerade.rs:7:6
++   |
++LL | enum ProceduralMasqueradeDummyType {
++   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++   |
++   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
++   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
++   = note: The `procedural-masquerade` crate has been unnecessary since Rust 1.30.0. Versions of this crate below 0.1.7 will eventually stop compiling.
++
++error: using `procedural-masquerade` crate
++  --> $DIR/issue-73933-procedural-masquerade.rs:7:6
++   |
++LL | enum ProceduralMasqueradeDummyType {
++   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++   |
++   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
++   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
++   = note: The `procedural-masquerade` crate has been unnecessary since Rust 1.30.0. Versions of this crate below 0.1.7 will eventually stop compiling.
++
++error: using `procedural-masquerade` crate
++  --> $DIR/issue-73933-procedural-masquerade.rs:7:6
++   |
++LL | enum ProceduralMasqueradeDummyType {
++   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++   |
++   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
++   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
++   = note: The `procedural-masquerade` crate has been unnecessary since Rust 1.30.0. Versions of this crate below 0.1.7 will eventually stop compiling.
++
++error: aborting due to 4 previous errors
++
++Future incompatibility report: Future breakage diagnostic:
++error: using `procedural-masquerade` crate
++  --> $DIR/issue-73933-procedural-masquerade.rs:7:6
++   |
++LL | enum ProceduralMasqueradeDummyType {
++   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++   |
++   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
++   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
++   = note: The `procedural-masquerade` crate has been unnecessary since Rust 1.30.0. Versions of this crate below 0.1.7 will eventually stop compiling.
++   = note: `#[deny(proc_macro_back_compat)]` on by default
++
++Future breakage diagnostic:
++error: using `procedural-masquerade` crate
++  --> $DIR/issue-73933-procedural-masquerade.rs:7:6
++   |
++LL | enum ProceduralMasqueradeDummyType {
++   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++   |
++   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
++   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
++   = note: The `procedural-masquerade` crate has been unnecessary since Rust 1.30.0. Versions of this crate below 0.1.7 will eventually stop compiling.
++   = note: `#[deny(proc_macro_back_compat)]` on by default
++
++Future breakage diagnostic:
++error: using `procedural-masquerade` crate
++  --> $DIR/issue-73933-procedural-masquerade.rs:7:6
++   |
++LL | enum ProceduralMasqueradeDummyType {
++   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++   |
++   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
++   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
++   = note: The `procedural-masquerade` crate has been unnecessary since Rust 1.30.0. Versions of this crate below 0.1.7 will eventually stop compiling.
++   = note: `#[deny(proc_macro_back_compat)]` on by default
++
++Future breakage diagnostic:
++error: using `procedural-masquerade` crate
++  --> $DIR/issue-73933-procedural-masquerade.rs:7:6
++   |
++LL | enum ProceduralMasqueradeDummyType {
++   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++   |
++   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
++   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
++   = note: The `procedural-masquerade` crate has been unnecessary since Rust 1.30.0. Versions of this crate below 0.1.7 will eventually stop compiling.
++   = note: `#[deny(proc_macro_back_compat)]` on by default
++
+diff --git a/src/test/ui/proc-macro/issue-73933-procedural-masquerade.stdout b/src/test/ui/proc-macro/issue-73933-procedural-masquerade.stdout
+index 8cd981e03f1..50334589d0b 100644
+--- a/src/test/ui/proc-macro/issue-73933-procedural-masquerade.stdout
++++ b/src/test/ui/proc-macro/issue-73933-procedural-masquerade.stdout
+@@ -1,21 +1,22 @@
+-PRINT-DERIVE INPUT (DISPLAY): enum ProceduralMasqueradeDummyType { Input }
++PRINT-DERIVE INPUT (DISPLAY): enum ProceduralMasqueradeDummyType { Input, }
++PRINT-DERIVE RE-COLLECTED (DISPLAY): enum ProceduralMasqueradeDummyType { Input }
+ PRINT-DERIVE INPUT (DEBUG): TokenStream [
+     Ident {
+         ident: "enum",
+-        span: #0 bytes(100..104),
++        span: #0 bytes(86..90),
+     },
+     Ident {
+         ident: "ProceduralMasqueradeDummyType",
+-        span: #0 bytes(105..134),
++        span: #0 bytes(91..120),
+     },
+     Group {
+         delimiter: Brace,
+         stream: TokenStream [
+             Ident {
+                 ident: "Input",
+-                span: #0 bytes(141..146),
++                span: #0 bytes(315..320),
+             },
+         ],
+-        span: #0 bytes(135..148),
++        span: #0 bytes(121..322),
+     },
+ ]
+diff --git a/src/test/ui/proc-macro/pretty-print-hack-hide.rs b/src/test/ui/proc-macro/pretty-print-hack-hide.rs
+deleted file mode 100644
+index f53e8fe8252..00000000000
+--- a/src/test/ui/proc-macro/pretty-print-hack-hide.rs
++++ /dev/null
+@@ -1,12 +0,0 @@
+-// aux-build:test-macros.rs
+-// compile-flags: -Z span-debug
+-// check-pass
+-
+-#![no_std] // Don't load unnecessary hygiene information from std
+-extern crate std;
+-
+-#[macro_use] extern crate test_macros;
+-
+-include!("pretty-print-hack/rental-0.5.6/src/lib.rs");
+-
+-fn main() {}
+diff --git a/src/test/ui/proc-macro/pretty-print-hack-hide.stdout b/src/test/ui/proc-macro/pretty-print-hack-hide.stdout
+deleted file mode 100644
+index ea796bb2697..00000000000
+--- a/src/test/ui/proc-macro/pretty-print-hack-hide.stdout
++++ /dev/null
+@@ -1,21 +0,0 @@
+-PRINT-DERIVE INPUT (DISPLAY): enum ProceduralMasqueradeDummyType { Input }
+-PRINT-DERIVE INPUT (DEBUG): TokenStream [
+-    Ident {
+-        ident: "enum",
+-        span: $DIR/pretty-print-hack/rental-0.5.6/src/lib.rs:4:1: 4:5 (#0),
+-    },
+-    Ident {
+-        ident: "ProceduralMasqueradeDummyType",
+-        span: $DIR/pretty-print-hack/rental-0.5.6/src/lib.rs:4:6: 4:35 (#0),
+-    },
+-    Group {
+-        delimiter: Brace,
+-        stream: TokenStream [
+-            Ident {
+-                ident: "Input",
+-                span: $DIR/pretty-print-hack/rental-0.5.6/src/lib.rs:13:5: 13:10 (#0),
+-            },
+-        ],
+-        span: $DIR/pretty-print-hack/rental-0.5.6/src/lib.rs:4:36: 14:2 (#0),
+-    },
+-]
+diff --git a/src/test/ui/proc-macro/pretty-print-hack-show.rs b/src/test/ui/proc-macro/pretty-print-hack-show.rs
+deleted file mode 100644
+index 9b1899e4922..00000000000
+--- a/src/test/ui/proc-macro/pretty-print-hack-show.rs
++++ /dev/null
+@@ -1,17 +0,0 @@
+-// aux-build:test-macros.rs
+-// compile-flags: -Z span-debug
+-
+-#![no_std] // Don't load unnecessary hygiene information from std
+-extern crate std;
+-
+-#[macro_use] extern crate test_macros;
+-
+-mod first {
+-    include!("pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs");
+-}
+-
+-mod second {
+-    include!("pretty-print-hack/rental-0.5.5/src/lib.rs");
+-}
+-
+-fn main() {}
+diff --git a/src/test/ui/proc-macro/pretty-print-hack-show.stderr b/src/test/ui/proc-macro/pretty-print-hack-show.stderr
+deleted file mode 100644
+index 873054927c9..00000000000
+--- a/src/test/ui/proc-macro/pretty-print-hack-show.stderr
++++ /dev/null
+@@ -1,179 +0,0 @@
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-   = note: `#[deny(proc_macro_back_compat)]` on by default
+-
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/rental-0.5.5/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/rental-0.5.5/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/rental-0.5.5/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/rental-0.5.5/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-
+-error: aborting due to 8 previous errors
+-
+-Future incompatibility report: Future breakage diagnostic:
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-   = note: `#[deny(proc_macro_back_compat)]` on by default
+-
+-Future breakage diagnostic:
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-   = note: `#[deny(proc_macro_back_compat)]` on by default
+-
+-Future breakage diagnostic:
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-   = note: `#[deny(proc_macro_back_compat)]` on by default
+-
+-Future breakage diagnostic:
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-   = note: `#[deny(proc_macro_back_compat)]` on by default
+-
+-Future breakage diagnostic:
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/rental-0.5.5/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-   = note: `#[deny(proc_macro_back_compat)]` on by default
+-
+-Future breakage diagnostic:
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/rental-0.5.5/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-   = note: `#[deny(proc_macro_back_compat)]` on by default
+-
+-Future breakage diagnostic:
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/rental-0.5.5/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-   = note: `#[deny(proc_macro_back_compat)]` on by default
+-
+-Future breakage diagnostic:
+-error: using an old version of `rental`
+-  --> $DIR/pretty-print-hack/rental-0.5.5/src/lib.rs:4:6
+-   |
+-LL | enum ProceduralMasqueradeDummyType {
+-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-   |
+-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+-   = note: for more information, see issue #83125 <https://github.com/rust-lang/rust/issues/83125>
+-   = note: older versions of the `rental` crate will stop compiling in future versions of Rust; please update to `rental` v0.5.6, or switch to one of the `rental` alternatives
+-   = note: `#[deny(proc_macro_back_compat)]` on by default
+-
+diff --git a/src/test/ui/proc-macro/pretty-print-hack-show.stdout b/src/test/ui/proc-macro/pretty-print-hack-show.stdout
+deleted file mode 100644
+index 3d793d2a014..00000000000
+--- a/src/test/ui/proc-macro/pretty-print-hack-show.stdout
++++ /dev/null
+@@ -1,44 +0,0 @@
+-PRINT-DERIVE INPUT (DISPLAY): enum ProceduralMasqueradeDummyType { Input, }
+-PRINT-DERIVE RE-COLLECTED (DISPLAY): enum ProceduralMasqueradeDummyType { Input }
+-PRINT-DERIVE INPUT (DEBUG): TokenStream [
+-    Ident {
+-        ident: "enum",
+-        span: $DIR/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs:4:1: 4:5 (#0),
+-    },
+-    Ident {
+-        ident: "ProceduralMasqueradeDummyType",
+-        span: $DIR/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs:4:6: 4:35 (#0),
+-    },
+-    Group {
+-        delimiter: Brace,
+-        stream: TokenStream [
+-            Ident {
+-                ident: "Input",
+-                span: $DIR/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs:13:5: 13:10 (#0),
+-            },
+-        ],
+-        span: $DIR/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs:4:36: 14:2 (#0),
+-    },
+-]
+-PRINT-DERIVE INPUT (DISPLAY): enum ProceduralMasqueradeDummyType { Input, }
+-PRINT-DERIVE RE-COLLECTED (DISPLAY): enum ProceduralMasqueradeDummyType { Input }
+-PRINT-DERIVE INPUT (DEBUG): TokenStream [
+-    Ident {
+-        ident: "enum",
+-        span: $DIR/pretty-print-hack/rental-0.5.5/src/lib.rs:4:1: 4:5 (#0),
+-    },
+-    Ident {
+-        ident: "ProceduralMasqueradeDummyType",
+-        span: $DIR/pretty-print-hack/rental-0.5.5/src/lib.rs:4:6: 4:35 (#0),
+-    },
+-    Group {
+-        delimiter: Brace,
+-        stream: TokenStream [
+-            Ident {
+-                ident: "Input",
+-                span: $DIR/pretty-print-hack/rental-0.5.5/src/lib.rs:13:5: 13:10 (#0),
+-            },
+-        ],
+-        span: $DIR/pretty-print-hack/rental-0.5.5/src/lib.rs:4:36: 14:2 (#0),
+-    },
+-]
+diff --git a/src/test/ui/proc-macro/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs b/src/test/ui/proc-macro/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs
+deleted file mode 100644
+index 9501980fa55..00000000000
+--- a/src/test/ui/proc-macro/pretty-print-hack/allsorts-rental-0.5.6/src/lib.rs
++++ /dev/null
+@@ -1,14 +0,0 @@
+-// ignore-test
+-
+-#[derive(Print)]
+-enum ProceduralMasqueradeDummyType {
+-//~^ ERROR using
+-//~| WARN this was previously
+-//~| ERROR using
+-//~| WARN this was previously
+-//~| ERROR using
+-//~| WARN this was previously
+-//~| ERROR using
+-//~| WARN this was previously
+-    Input
+-}
+diff --git a/src/test/ui/proc-macro/pretty-print-hack/rental-0.5.5/src/lib.rs b/src/test/ui/proc-macro/pretty-print-hack/rental-0.5.5/src/lib.rs
+deleted file mode 100644
+index 9501980fa55..00000000000
+--- a/src/test/ui/proc-macro/pretty-print-hack/rental-0.5.5/src/lib.rs
++++ /dev/null
+@@ -1,14 +0,0 @@
+-// ignore-test
+-
+-#[derive(Print)]
+-enum ProceduralMasqueradeDummyType {
+-//~^ ERROR using
+-//~| WARN this was previously
+-//~| ERROR using
+-//~| WARN this was previously
+-//~| ERROR using
+-//~| WARN this was previously
+-//~| ERROR using
+-//~| WARN this was previously
+-    Input
+-}
+diff --git a/src/test/ui/proc-macro/pretty-print-hack/rental-0.5.6/src/lib.rs b/src/test/ui/proc-macro/pretty-print-hack/rental-0.5.6/src/lib.rs
+deleted file mode 100644
+index 9501980fa55..00000000000
+--- a/src/test/ui/proc-macro/pretty-print-hack/rental-0.5.6/src/lib.rs
++++ /dev/null
+@@ -1,14 +0,0 @@
+-// ignore-test
+-
+-#[derive(Print)]
+-enum ProceduralMasqueradeDummyType {
+-//~^ ERROR using
+-//~| WARN this was previously
+-//~| ERROR using
+-//~| WARN this was previously
+-//~| ERROR using
+-//~| WARN this was previously
+-//~| ERROR using
+-//~| WARN this was previously
+-    Input
+-}
