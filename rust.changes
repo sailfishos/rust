@@ -1,3 +1,6 @@
+* Mon Feb 6 2023 Matti Lehtimäki <matti.lehtimaki@jolla.com> - 1.61.0+git1
+- [rust] Update to version 1.61.0. JB#57222
+
 * Fri Dec 16 2022 Ville Nummela <ville.nummela@jolla.com> - 1.52.1+git4
 - [rust] Add cross compilers to ix86 BuildRequires. JB#59591
 
