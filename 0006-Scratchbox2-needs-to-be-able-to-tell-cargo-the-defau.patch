@@ -1,4 +1,4 @@
-From f5d252ef690390c2cb9948995ccf68aeae2b123e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ruben De Smet <ruben.de.smet@rubdos.be>
 Date: Thu, 27 Jan 2022 16:32:39 +0100
 Subject: [PATCH] Scratchbox2 needs to be able to tell cargo the default
@@ -8,28 +8,24 @@ This is analogous to the SB2 patch to rustc; ac226bbc018e11311394126fe580763c5bc
 
 Signed-off-by: Ruben De Smet <ruben.de.smet@rubdos.be>
 ---
- src/cargo/core/compiler/compile_kind.rs | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ src/tools/cargo | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/src/tools/cargo/src/cargo/core/compiler/compile_kind.rs b/src/tools/cargo/src/cargo/core/compiler/compile_kind.rs
-index adfa55f..8d892a0 100644
+index c3c921d41..d8a08582a 100644
 --- a/src/tools/cargo/src/cargo/core/compiler/compile_kind.rs
 +++ b/src/tools/cargo/src/cargo/core/compiler/compile_kind.rs
-@@ -76,7 +76,13 @@ impl CompileKind {
-                 };
-                 CompileKind::Target(CompileTarget::new(&value)?)
-             }
--            None => CompileKind::Host,
+@@ -72,7 +72,13 @@ impl CompileKind {
+         }
+
+         let kinds = match &config.build_config()?.target {
+-            None => Ok(vec![CompileKind::Host]),
 +            None => {
 +                if let Ok(sb2_tgt) = std::env::var("SB2_RUST_TARGET_TRIPLE") {
-+                    CompileKind::Target(CompileTarget::new(&sb2_tgt)?)
++                    Ok(vec![CompileKind::Target(CompileTarget::new(&sb2_tgt)?)])
 +                } else {
-+                    CompileKind::Host
++                    Ok(vec![CompileKind::Host])
 +                }
-+            }
++            },
+             Some(build_target_config) => dedup(&build_target_config.values(config)?),
          };
-         Ok(vec![kind])
-     }
--- 
-2.31.1
-
