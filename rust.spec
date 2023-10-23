@@ -11,13 +11,13 @@
 %define rust_use_bootstrap 1
 %define bootstrap_arches i486
 
-%global bootstrap_rust 1.64.0
-%global bootstrap_cargo 1.64.0
+%global bootstrap_rust 1.72.1
+%global bootstrap_cargo 1.72.1
 
 # Only x86_64 and i686 are Tier 1 platforms at this time.
 # https://forge.rust-lang.org/platform-support.html
 
-%global rust_version 1.64.0
+%global rust_version 1.72.1
 
 %ifarch %ix86
 %define xbuildjobs %{nil}
