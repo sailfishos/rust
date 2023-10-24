@@ -445,6 +445,7 @@ rm -f %{buildroot}%{rustlibdir}/%{rust_aarch64_triple}/bin/rust-ll*
 
 # Remove cargo-credential-1password
 rm -f %{buildroot}%{_libexecdir}/cargo-credential-1password
+rm -f %{buildroot}%{_libexecdir}/rust-analyzer-proc-macro-srv
 
 %check
 # Disabled for efficient rebuilds until the hanging fix is completed
