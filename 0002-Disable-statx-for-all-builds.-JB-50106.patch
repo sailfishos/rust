@@ -75,6 +75,3 @@ index fbc7f04ce9a..bf49ad70590 100644
  }
  
  cfg_has_statx! {{
--- 
-2.42.0
-

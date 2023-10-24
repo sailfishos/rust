@@ -28,6 +28,3 @@ index 73d8f89cc..d35f55d11 100644
 +            },
              Some(build_target_config) => dedup(&build_target_config.values(config)?),
          };
--- 
-2.42.0
-

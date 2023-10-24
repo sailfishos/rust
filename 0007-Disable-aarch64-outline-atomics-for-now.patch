@@ -26,6 +26,3 @@ index da246089440..8c5daccc331 100644
              mcount: "\u{1}_mcount".into(),
              max_atomic_width: Some(128),
              supported_sanitizers: SanitizerSet::ADDRESS
--- 
-2.42.0
-
