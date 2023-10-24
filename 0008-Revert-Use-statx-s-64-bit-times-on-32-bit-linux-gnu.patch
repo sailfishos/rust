@@ -71,7 +71,7 @@ index bf49ad70590..ff01830e0f6 100644
 -        stx_mtime: libc::statx_timestamp,
 -
      }
- 
+
 -    // We prefer `statx` on Linux if available, which contains file creation time,
 -    // as well as 64-bit timestamps of all kinds.
 -    // Default `stat64` contains no creation time and may have 32-bit `time_t`.
@@ -92,7 +92,7 @@ index bf49ad70590..ff01830e0f6 100644
 -            #[cfg(target_pointer_width = "32")]
 -            stx_mtime: buf.stx_mtime,
          };
- 
+
          Some(Ok(FileAttr { stat, statx_extra_fields: Some(extra) }))
 @@ -365,36 +349,6 @@ impl FileAttr {
          fn from_stat64(stat: stat64) -> Self {
@@ -141,7 +141,7 @@ index bf49ad70590..ff01830e0f6 100644
 +            tv_nsec: self.stat.st_mtimensec as libc::c_long,
 +        }))
      }
- 
+
      pub fn accessed(&self) -> io::Result<SystemTime> {
 -        Ok(SystemTime::new(self.stat.st_atime as i64, self.stat.st_atimensec as i64))
 +        Ok(SystemTime::from(libc::timespec {
@@ -149,7 +149,7 @@ index bf49ad70590..ff01830e0f6 100644
 +            tv_nsec: self.stat.st_atimensec as libc::c_long,
 +        }))
      }
- 
+
      pub fn created(&self) -> io::Result<SystemTime> {
 -        Ok(SystemTime::new(self.stat.st_birthtime as i64, self.stat.st_birthtimensec as i64))
 +        Ok(SystemTime::from(libc::timespec {
@@ -158,7 +158,7 @@ index bf49ad70590..ff01830e0f6 100644
 +        }))
      }
  }
- 
+
 @@ -441,19 +404,18 @@ impl FileAttr {
          target_os = "vita"
      )))]
@@ -176,7 +176,7 @@ index bf49ad70590..ff01830e0f6 100644
 +            tv_nsec: self.stat.st_mtime_nsec as _,
 +        }))
      }
- 
+
      #[cfg(any(target_os = "vxworks", target_os = "espidf", target_os = "vita"))]
      pub fn modified(&self) -> io::Result<SystemTime> {
 -        Ok(SystemTime::new(self.stat.st_mtime as i64, 0))
@@ -185,7 +185,7 @@ index bf49ad70590..ff01830e0f6 100644
 +            tv_nsec: 0,
 +        }))
      }
- 
+
      #[cfg(target_os = "horizon")]
 @@ -468,19 +430,18 @@ pub fn modified(&self) -> io::Result<SystemTime> {
          target_os = "vita"
@@ -204,7 +204,7 @@ index bf49ad70590..ff01830e0f6 100644
 +            tv_nsec: self.stat.st_atime_nsec as _,
 +        }))
      }
- 
+
      #[cfg(any(target_os = "vxworks", target_os = "espidf", target_os = "vita"))]
      pub fn accessed(&self) -> io::Result<SystemTime> {
 -        Ok(SystemTime::new(self.stat.st_atime as i64, 0))
@@ -213,7 +213,7 @@ index bf49ad70590..ff01830e0f6 100644
 +            tv_nsec: 0,
 +        }))
      }
- 
+
      #[cfg(target_os = "horizon")]
 @@ -497,7 +458,10 @@ pub fn accessed(&self) -> io::Result<SystemTime> {
          target_os = "watchos",
@@ -225,7 +225,7 @@ index bf49ad70590..ff01830e0f6 100644
 +            tv_nsec: self.stat.st_birthtime_nsec as libc::c_long,
 +        }))
      }
- 
+
      #[cfg(not(any(
 @@ -513,7 +477,10 @@ pub fn created(&self) -> io::Result<SystemTime> {
          cfg_has_statx! {
@@ -244,7 +244,7 @@ index 17b4130c202..4e8dd9a86e7 100644
 --- a/library/std/src/sys/unix/time.rs
 +++ b/library/std/src/sys/unix/time.rs
 @@ -36,6 +36,7 @@ pub(in crate::sys::unix) struct Timespec {
- 
+
  impl SystemTime {
      #[cfg_attr(target_os = "horizon", allow(unused))]
 +    #[cfg_attr(target_env = "gnu", allow(dead_code))]

@@ -15,8 +15,9 @@ diff --git a/src/tools/cargo/src/cargo/core/compiler/compile_kind.rs b/src/tools
 index 73d8f89cc..d35f55d11 100644
 --- a/src/tools/cargo/src/cargo/core/compiler/compile_kind.rs
 +++ b/src/tools/cargo/src/cargo/core/compiler/compile_kind.rs
-@@ -72,6 +72,13 @@ impl CompileKind {
- 
+@@ -71,7 +71,13 @@ impl CompileKind {
+         }
+
          let kinds = match &config.build_config()?.target {
 -            None => Ok(vec![CompileKind::Host]),
 +            None => {
@@ -25,6 +26,6 @@ index 73d8f89cc..d35f55d11 100644
 +                } else {
 +                    Ok(vec![CompileKind::Host])
 +                }
-+            },
++            }
              Some(build_target_config) => dedup(&build_target_config.values(config)?),
          };
