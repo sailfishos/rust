@@ -15,10 +15,10 @@ Signed-off-by: Ruben De Smet <ruben.de.smet@rubdos.be>
  1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/compiler/rustc_session/src/config.rs b/compiler/rustc_session/src/config.rs
-index 4182a5d07118e0652ff63c4bec28bde0775d0c59..9904ab2e70d7aafab4ec63e86d0cdb383ca2285b 100644
+index f97cb3440d2..9b96d0d2e57 100644
 --- a/compiler/rustc_session/src/config.rs
 +++ b/compiler/rustc_session/src/config.rs
-@@ -1848,7 +1848,14 @@ pub fn parse_target_triple(
+@@ -2170,7 +2170,14 @@ pub fn parse_target_triple(
              })
          }
          Some(target) => TargetTriple::TargetTriple(target),

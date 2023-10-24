@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: David Greaves <david.greaves@jolla.com>
 Date: Wed, 20 Jan 2021 09:40:34 +0000
-Subject: [PATCH] Provide ENV controls to bypass some sb2 calls between fork
- exec
+Subject: [PATCH] Provide ENV controls to bypass some sb2 calls between
+ fork exec
 
 In threaded systems there can be deadlocks caused by calling malloc
 after fork and before exec. Rust manages this but sb2 does not.
@@ -35,15 +35,15 @@ needed to support the SHIM functionality
 Signed-off-by: David Greaves <david.greaves@jolla.com>
 Signed-off-by: Ruben De Smet <ruben.de.smet@rubdos.be>
 ---
- .../src/sys/unix/process/process_common.rs    |  50 ++++++-
+ .../src/sys/unix/process/process_common.rs    |  55 ++++++-
  .../std/src/sys/unix/process/process_unix.rs  | 138 ++++++++++++++++--
- 2 files changed, 170 insertions(+), 18 deletions(-)
+ 2 files changed, 173 insertions(+), 20 deletions(-)
 
 diff --git a/library/std/src/sys/unix/process/process_common.rs b/library/std/src/sys/unix/process/process_common.rs
-index 27bee714f5b4317132db508fe916c7e194d05bc5..7746177e0423b7689833cc84b6132240a8bb2bf0 100644
+index 640648e8707..f15625e0514 100644
 --- a/library/std/src/sys/unix/process/process_common.rs
 +++ b/library/std/src/sys/unix/process/process_common.rs
-@@ -61,7 +61,7 @@ cfg_if::cfg_if! {
+@@ -84,7 +84,7 @@ pub unsafe fn sigaddset(set: *mut libc::sigset_t, signum: libc::c_int) -> libc::
  ////////////////////////////////////////////////////////////////////////////////
  
  pub struct Command {
@@ -52,7 +52,7 @@ index 27bee714f5b4317132db508fe916c7e194d05bc5..7746177e0423b7689833cc84b6132240
      args: Vec<CString>,
      /// Exactly what will be passed to `execvp`.
      ///
-@@ -70,6 +70,13 @@ pub struct Command {
+@@ -93,6 +93,13 @@ pub struct Command {
      /// `args` to properly update this as well.
      argv: Argv,
      env: CommandEnv,
@@ -64,9 +64,9 @@ index 27bee714f5b4317132db508fe916c7e194d05bc5..7746177e0423b7689833cc84b6132240
 +    pub(crate) setgid: Option<SetgidFn>,
 +    pub(crate) setgroups: Option<SetgroupsFn>,
  
+     program_kind: ProgramKind,
      cwd: Option<CString>,
-     uid: Option<uid_t>,
-@@ -85,6 +92,14 @@ pub struct Command {
+@@ -109,6 +116,14 @@ pub struct Command {
      pgroup: Option<pid_t>,
  }
  
@@ -81,18 +81,18 @@ index 27bee714f5b4317132db508fe916c7e194d05bc5..7746177e0423b7689833cc84b6132240
  // Create a new type for argv, so that we can make it `Send` and `Sync`
  struct Argv(Vec<*const c_char>);
  
-@@ -132,15 +147,23 @@ impl Command {
-     pub fn new(program: &OsStr) -> Command {
+@@ -181,16 +196,24 @@ pub fn new(program: &OsStr) -> Command {
          let mut saw_nul = false;
+         let program_kind = ProgramKind::new(program.as_ref());
          let program = os2c(program, &mut saw_nul);
 +        let arg0 = program.clone();
          Command {
 -            argv: Argv(vec![program.as_ptr(), ptr::null()]),
 -            args: vec![program.clone()],
--            program,
 +            argv: Argv(vec![arg0.as_ptr(), ptr::null()]),
 +            args: vec![arg0],
-+            program: program,
+             program,
+             program_kind,
              env: Default::default(),
 +            execvp: None,
 +            dup2: None,
@@ -109,18 +109,18 @@ index 27bee714f5b4317132db508fe916c7e194d05bc5..7746177e0423b7689833cc84b6132240
              closures: Vec::new(),
              groups: None,
              stdin: None,
-@@ -154,15 +177,23 @@ impl Command {
-     pub fn new(program: &OsStr) -> Command {
+@@ -205,16 +228,24 @@ pub fn new(program: &OsStr) -> Command {
          let mut saw_nul = false;
+         let program_kind = ProgramKind::new(program.as_ref());
          let program = os2c(program, &mut saw_nul);
 +        let arg0 = program.clone();
          Command {
 -            argv: Argv(vec![program.as_ptr(), ptr::null()]),
 -            args: vec![program.clone()],
--            program,
 +            argv: Argv(vec![arg0.as_ptr(), ptr::null()]),
 +            args: vec![arg0],
-+            program: program,
+             program,
+             program_kind,
              env: Default::default(),
 +            execvp: None,
 +            dup2: None,
@@ -137,7 +137,7 @@ index 27bee714f5b4317132db508fe916c7e194d05bc5..7746177e0423b7689833cc84b6132240
              closures: Vec::new(),
              groups: None,
              stdin: None,
-@@ -173,6 +204,16 @@ impl Command {
+@@ -225,6 +256,16 @@ pub fn new(program: &OsStr) -> Command {
          }
      }
  
@@ -155,18 +155,21 @@ index 27bee714f5b4317132db508fe916c7e194d05bc5..7746177e0423b7689833cc84b6132240
          // Set a new arg0
          let arg = os2c(arg, &mut self.saw_nul);
 diff --git a/library/std/src/sys/unix/process/process_unix.rs b/library/std/src/sys/unix/process/process_unix.rs
-index 3d305cd7310fd4b8419d220d1adeadebb9fda914..5d1c667b943cb2af0e0e918c17a7b24293617376 100644
+index 0ce93af66ac..04449d859bf 100644
 --- a/library/std/src/sys/unix/process/process_unix.rs
 +++ b/library/std/src/sys/unix/process/process_unix.rs
-@@ -27,11 +27,15 @@
+@@ -28,7 +28,7 @@
  use libc::RTP_ID as pid_t;
  
  #[cfg(not(target_os = "vxworks"))]
 -use libc::{c_int, pid_t};
 +use libc::{c_char, c_int, dlsym, pid_t};
  
- #[cfg(not(any(target_os = "vxworks", target_os = "l4re")))]
- use libc::{gid_t, uid_t};
+ #[cfg(not(any(
+     target_os = "vxworks",
+@@ -65,6 +65,10 @@ fn get_clock_resolution() -> Duration {
+     }
+ }
  
 +use crate::ffi::OsString;
 +use crate::intrinsics::transmute;
@@ -175,8 +178,8 @@ index 3d305cd7310fd4b8419d220d1adeadebb9fda914..5d1c667b943cb2af0e0e918c17a7b242
  ////////////////////////////////////////////////////////////////////////////////
  // Command
  ////////////////////////////////////////////////////////////////////////////////
-@@ -61,6 +65,65 @@ pub fn spawn(
- 
+@@ -93,6 +97,65 @@ pub fn spawn(
+         }
          let (input, output) = sys::pipe::anon_pipe()?;
  
 +        // If there is a RUST_EXEC_SHIM (could be "/usr/bin/env --")
@@ -241,16 +244,16 @@ index 3d305cd7310fd4b8419d220d1adeadebb9fda914..5d1c667b943cb2af0e0e918c17a7b242
          // Whatever happens after the fork is almost for sure going to touch or
          // look at the environment in one way or another (PATH in `execvp` or
          // accessing the `environ` pointer ourselves). Make sure no other thread
-@@ -76,7 +139,7 @@ pub fn spawn(
+@@ -109,7 +172,7 @@ pub fn spawn(
          if pid == 0 {
              crate::panic::always_abort();
-             mem::forget(env_lock);
+             mem::forget(env_lock); // avoid non-async-signal-safe unlocking
 -            drop(input);
 +            self.unwrap_drop(input);
              let Err(err) = unsafe { self.do_exec(theirs, envp.as_ref()) };
              let errno = err.raw_os_error().unwrap_or(libc::EINVAL) as u32;
              let errno = errno.to_be_bytes();
-@@ -243,7 +306,48 @@ pub fn exec(&mut self, default: Stdio) -> io::Error {
+@@ -336,7 +399,48 @@ pub fn exec(&mut self, default: Stdio) -> io::Error {
              Err(e) => e,
          }
      }
@@ -300,7 +303,7 @@ index 3d305cd7310fd4b8419d220d1adeadebb9fda914..5d1c667b943cb2af0e0e918c17a7b242
      // And at this point we've reached a special time in the life of the
      // child. The child must now be considered hamstrung and unable to
      // do anything other than syscalls really. Consider the following
-@@ -282,13 +386,13 @@ unsafe fn do_exec(
+@@ -376,13 +480,13 @@ unsafe fn do_exec(
          use crate::sys::{self, cvt_r};
  
          if let Some(fd) = stdio.stdin.fd() {
@@ -317,7 +320,7 @@ index 3d305cd7310fd4b8419d220d1adeadebb9fda914..5d1c667b943cb2af0e0e918c17a7b242
          }
  
          #[cfg(not(target_os = "l4re"))]
-@@ -296,10 +400,10 @@ unsafe fn do_exec(
+@@ -390,10 +494,10 @@ unsafe fn do_exec(
              if let Some(_g) = self.get_groups() {
                  //FIXME: Redox kernel does not support setgroups yet
                  #[cfg(not(target_os = "redox"))]
@@ -330,12 +333,12 @@ index 3d305cd7310fd4b8419d220d1adeadebb9fda914..5d1c667b943cb2af0e0e918c17a7b242
              }
              if let Some(u) = self.get_uid() {
                  // When dropping privileges from root, the `setgroups` call
-@@ -311,13 +415,13 @@ unsafe fn do_exec(
+@@ -405,13 +509,13 @@ unsafe fn do_exec(
                  //FIXME: Redox kernel does not support setgroups yet
                  #[cfg(not(target_os = "redox"))]
                  if libc::getuid() == 0 && self.get_groups().is_none() {
--                    cvt(libc::setgroups(0, ptr::null()))?;
-+                    cvt(self.unwrap_setgroups(0, ptr::null()))?;
+-                    cvt(libc::setgroups(0, crate::ptr::null()))?;
++                    cvt(self.unwrap_setgroups(0, crate::ptr::null()))?;
                  }
 -                cvt(libc::setuid(u as uid_t))?;
 +                cvt(self.unwrap_setuid(u as uid_t))?;
@@ -347,7 +350,7 @@ index 3d305cd7310fd4b8419d220d1adeadebb9fda914..5d1c667b943cb2af0e0e918c17a7b242
          }
  
          if let Some(pgroup) = self.get_pgroup() {
-@@ -378,8 +482,12 @@ fn drop(&mut self) {
+@@ -469,8 +573,12 @@ fn drop(&mut self) {
              _reset = Some(Reset(*sys::os::environ()));
              *sys::os::environ() = envp.as_ptr();
          }
@@ -362,7 +365,7 @@ index 3d305cd7310fd4b8419d220d1adeadebb9fda914..5d1c667b943cb2af0e0e918c17a7b242
          Err(io::Error::last_os_error())
      }
  
-@@ -394,6 +502,7 @@ fn posix_spawn(
+@@ -497,6 +605,7 @@ fn posix_spawn(
          _: &ChildPipes,
          _: Option<&CStringArray>,
      ) -> io::Result<Option<Process>> {
@@ -370,9 +373,9 @@ index 3d305cd7310fd4b8419d220d1adeadebb9fda914..5d1c667b943cb2af0e0e918c17a7b242
          Ok(None)
      }
  
-@@ -413,12 +522,15 @@ fn posix_spawn(
+@@ -520,12 +629,15 @@ fn posix_spawn(
          use crate::mem::MaybeUninit;
-         use crate::sys::{self, cvt_nz};
+         use crate::sys::{self, cvt_nz, unix_sigpipe_attr_specified};
  
 +        let skip_spawnvp: bool = getenv(&OsString::from("SB2_RUST_NO_SPAWNVP")).is_some();
 +

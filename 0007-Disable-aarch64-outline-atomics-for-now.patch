@@ -10,18 +10,19 @@ The feature causes linking problems.
 
 Signed-off-by: Matti Lehtimäki <matti.lehtimaki@jolla.com>
 ---
- compiler/rustc_target/src/spec/aarch64_unknown_linux_gnu.rs | 1 -
- 1 file changed, 1 deletion(-)
+ compiler/rustc_target/src/spec/aarch64_unknown_linux_gnu.rs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/compiler/rustc_target/src/spec/aarch64_unknown_linux_gnu.rs b/compiler/rustc_target/src/spec/aarch64_unknown_linux_gnu.rs
-index 3006044d5..6ef7b596e 100644
+index da246089440..8c5daccc331 100644
 --- a/compiler/rustc_target/src/spec/aarch64_unknown_linux_gnu.rs
 +++ b/compiler/rustc_target/src/spec/aarch64_unknown_linux_gnu.rs
-@@ -7,7 +7,6 @@ pub fn target() -> Target {
+@@ -7,7 +7,7 @@ pub fn target() -> Target {
          data_layout: "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128".into(),
          arch: "aarch64".into(),
          options: TargetOptions {
--            features: "+outline-atomics".into(),
+-            features: "+v8a,+outline-atomics".into(),
++            features: "+v8a".into(),
              mcount: "\u{1}_mcount".into(),
              max_atomic_width: Some(128),
              supported_sanitizers: SanitizerSet::ADDRESS
