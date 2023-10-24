@@ -16,14 +16,14 @@ Signed-off-by: Tomi Leppänen <tomi.leppanen@jolla.com
 Signed-off-by: Matti Kosola <matti.kosola@jolla.com>
 Signed-off-by: Ruben De Smet <ruben.de.smet@rubdos.be>
 ---
- library/std/src/sys/unix/fs.rs | 27 ++-------------------------
- 1 file changed, 2 insertions(+), 25 deletions(-)
+ library/std/src/sys/unix/fs.rs | 32 ++------------------------------
+ 1 file changed, 2 insertions(+), 30 deletions(-)
 
 diff --git a/library/std/src/sys/unix/fs.rs b/library/std/src/sys/unix/fs.rs
-index 7181451de575fcb8ff7df27ba5a66b18a08904be..141e1726db49f1ac483a5788bdbc31388a1c942e 100644
+index fbc7f04ce9a..bf49ad70590 100644
 --- a/library/std/src/sys/unix/fs.rs
 +++ b/library/std/src/sys/unix/fs.rs
-@@ -13,25 +13,11 @@
+@@ -28,28 +28,11 @@
  use crate::sys::{cvt, cvt_r};
  use crate::sys_common::{AsInner, AsInnerMut, FromInner, IntoInner};
  
@@ -31,10 +31,11 @@ index 7181451de575fcb8ff7df27ba5a66b18a08904be..141e1726db49f1ac483a5788bdbc3138
 -    all(target_os = "linux", target_env = "gnu"),
 -    target_os = "macos",
 -    target_os = "ios",
+-    target_os = "tvos",
 -    target_os = "watchos",
 -))]
 -use crate::sys::weak::syscall;
- #[cfg(any(target_os = "android", target_os = "macos"))]
+ #[cfg(any(target_os = "android", target_os = "macos", target_os = "solaris"))]
  use crate::sys::weak::weak;
  
  use libc::{c_int, mode_t};
@@ -42,14 +43,16 @@ index 7181451de575fcb8ff7df27ba5a66b18a08904be..141e1726db49f1ac483a5788bdbc3138
 -#[cfg(any(
 -    target_os = "macos",
 -    target_os = "ios",
+-    target_os = "tvos",
 -    target_os = "watchos",
+-    target_os = "solaris",
 -    all(target_os = "linux", target_env = "gnu")
 -))]
 -use libc::c_char;
  #[cfg(any(target_os = "linux", target_os = "emscripten", target_os = "android"))]
  use libc::dirfd;
  #[cfg(any(target_os = "linux", target_os = "emscripten"))]
-@@ -87,20 +73,9 @@
+@@ -109,20 +92,9 @@
  // https://github.com/rust-lang/rust/pull/67774
  macro_rules! cfg_has_statx {
      ({ $($then_tt:tt)* } else { $($else_tt:tt)* }) => {
@@ -72,3 +75,6 @@ index 7181451de575fcb8ff7df27ba5a66b18a08904be..141e1726db49f1ac483a5788bdbc3138
  }
  
  cfg_has_statx! {{
+-- 
+2.42.0
+
