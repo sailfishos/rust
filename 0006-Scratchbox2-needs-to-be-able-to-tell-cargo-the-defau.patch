@@ -12,12 +12,12 @@ Signed-off-by: Ruben De Smet <ruben.de.smet@rubdos.be>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/src/tools/cargo/src/cargo/core/compiler/compile_kind.rs b/src/tools/cargo/src/cargo/core/compiler/compile_kind.rs
-index 73d8f89cc..d35f55d11 100644
+index 73d8f89cc..5d17c15d2 100644
 --- a/src/tools/cargo/src/cargo/core/compiler/compile_kind.rs
 +++ b/src/tools/cargo/src/cargo/core/compiler/compile_kind.rs
 @@ -71,7 +71,13 @@ impl CompileKind {
          }
-
+ 
          let kinds = match &config.build_config()?.target {
 -            None => Ok(vec![CompileKind::Host]),
 +            None => {
@@ -29,3 +29,7 @@ index 73d8f89cc..d35f55d11 100644
 +            }
              Some(build_target_config) => dedup(&build_target_config.values(config)?),
          };
+ 
+-- 
+2.42.0
+

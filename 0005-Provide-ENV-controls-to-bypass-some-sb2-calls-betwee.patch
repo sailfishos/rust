@@ -155,10 +155,10 @@ index 640648e8707..f15625e0514 100644
          // Set a new arg0
          let arg = os2c(arg, &mut self.saw_nul);
 diff --git a/library/std/src/sys/unix/process/process_unix.rs b/library/std/src/sys/unix/process/process_unix.rs
-index 0ce93af66ac..04449d859bf 100644
+index 3963e7f52d5..d08e4db6199 100644
 --- a/library/std/src/sys/unix/process/process_unix.rs
 +++ b/library/std/src/sys/unix/process/process_unix.rs
-@@ -28,7 +28,7 @@
+@@ -25,7 +25,7 @@
  use libc::RTP_ID as pid_t;
  
  #[cfg(not(target_os = "vxworks"))]
@@ -167,7 +167,7 @@ index 0ce93af66ac..04449d859bf 100644
  
  #[cfg(not(any(
      target_os = "vxworks",
-@@ -65,6 +65,10 @@ fn get_clock_resolution() -> Duration {
+@@ -62,6 +62,10 @@ fn get_clock_resolution() -> Duration {
      }
  }
  
@@ -178,8 +178,8 @@ index 0ce93af66ac..04449d859bf 100644
  ////////////////////////////////////////////////////////////////////////////////
  // Command
  ////////////////////////////////////////////////////////////////////////////////
-@@ -93,6 +97,65 @@ pub fn spawn(
-         }
+@@ -95,6 +99,65 @@ pub fn spawn(
+         #[cfg(not(target_os = "linux"))]
          let (input, output) = sys::pipe::anon_pipe()?;
  
 +        // If there is a RUST_EXEC_SHIM (could be "/usr/bin/env --")
@@ -244,16 +244,16 @@ index 0ce93af66ac..04449d859bf 100644
          // Whatever happens after the fork is almost for sure going to touch or
          // look at the environment in one way or another (PATH in `execvp` or
          // accessing the `environ` pointer ourselves). Make sure no other thread
-@@ -109,7 +172,7 @@ pub fn spawn(
+@@ -111,7 +174,7 @@ pub fn spawn(
          if pid == 0 {
              crate::panic::always_abort();
              mem::forget(env_lock); // avoid non-async-signal-safe unlocking
 -            drop(input);
 +            self.unwrap_drop(input);
-             let Err(err) = unsafe { self.do_exec(theirs, envp.as_ref()) };
-             let errno = err.raw_os_error().unwrap_or(libc::EINVAL) as u32;
-             let errno = errno.to_be_bytes();
-@@ -336,7 +399,48 @@ pub fn exec(&mut self, default: Stdio) -> io::Error {
+             #[cfg(target_os = "linux")]
+             if self.get_create_pidfd() {
+                 self.send_pidfd(&output);
+@@ -268,7 +331,48 @@ pub fn exec(&mut self, default: Stdio) -> io::Error {
              Err(e) => e,
          }
      }
@@ -303,7 +303,7 @@ index 0ce93af66ac..04449d859bf 100644
      // And at this point we've reached a special time in the life of the
      // child. The child must now be considered hamstrung and unable to
      // do anything other than syscalls really. Consider the following
-@@ -376,13 +480,13 @@ unsafe fn do_exec(
+@@ -308,13 +412,13 @@ unsafe fn do_exec(
          use crate::sys::{self, cvt_r};
  
          if let Some(fd) = stdio.stdin.fd() {
@@ -320,7 +320,7 @@ index 0ce93af66ac..04449d859bf 100644
          }
  
          #[cfg(not(target_os = "l4re"))]
-@@ -390,10 +494,10 @@ unsafe fn do_exec(
+@@ -322,10 +426,10 @@ unsafe fn do_exec(
              if let Some(_g) = self.get_groups() {
                  //FIXME: Redox kernel does not support setgroups yet
                  #[cfg(not(target_os = "redox"))]
@@ -333,7 +333,7 @@ index 0ce93af66ac..04449d859bf 100644
              }
              if let Some(u) = self.get_uid() {
                  // When dropping privileges from root, the `setgroups` call
-@@ -405,13 +509,13 @@ unsafe fn do_exec(
+@@ -337,13 +441,13 @@ unsafe fn do_exec(
                  //FIXME: Redox kernel does not support setgroups yet
                  #[cfg(not(target_os = "redox"))]
                  if libc::getuid() == 0 && self.get_groups().is_none() {
@@ -350,7 +350,7 @@ index 0ce93af66ac..04449d859bf 100644
          }
  
          if let Some(pgroup) = self.get_pgroup() {
-@@ -469,8 +573,12 @@ fn drop(&mut self) {
+@@ -401,8 +505,12 @@ fn drop(&mut self) {
              _reset = Some(Reset(*sys::os::environ()));
              *sys::os::environ() = envp.as_ptr();
          }
@@ -365,7 +365,7 @@ index 0ce93af66ac..04449d859bf 100644
          Err(io::Error::last_os_error())
      }
  
-@@ -497,6 +605,7 @@ fn posix_spawn(
+@@ -429,6 +537,7 @@ fn posix_spawn(
          _: &ChildPipes,
          _: Option<&CStringArray>,
      ) -> io::Result<Option<Process>> {
@@ -373,7 +373,7 @@ index 0ce93af66ac..04449d859bf 100644
          Ok(None)
      }
  
-@@ -520,12 +629,15 @@ fn posix_spawn(
+@@ -452,12 +561,15 @@ fn posix_spawn(
          use crate::mem::MaybeUninit;
          use crate::sys::{self, cvt_nz, unix_sigpipe_attr_specified};
  
@@ -389,3 +389,6 @@ index 0ce93af66ac..04449d859bf 100644
          {
              return Ok(None);
          }
+-- 
+2.42.0
+

@@ -20,10 +20,10 @@ Signed-off-by: Ruben De Smet <ruben.de.smet@rubdos.be>
  1 file changed, 2 insertions(+), 30 deletions(-)
 
 diff --git a/library/std/src/sys/unix/fs.rs b/library/std/src/sys/unix/fs.rs
-index fbc7f04ce9a..bf49ad70590 100644
+index a5604c92a80..8438d7dcc30 100644
 --- a/library/std/src/sys/unix/fs.rs
 +++ b/library/std/src/sys/unix/fs.rs
-@@ -28,28 +28,11 @@
+@@ -17,28 +17,11 @@
  use crate::sys::{cvt, cvt_r};
  use crate::sys_common::{AsInner, AsInnerMut, FromInner, IntoInner};
  
@@ -52,7 +52,7 @@ index fbc7f04ce9a..bf49ad70590 100644
  #[cfg(any(target_os = "linux", target_os = "emscripten", target_os = "android"))]
  use libc::dirfd;
  #[cfg(any(target_os = "linux", target_os = "emscripten"))]
-@@ -109,20 +92,9 @@
+@@ -98,20 +81,9 @@
  // https://github.com/rust-lang/rust/pull/67774
  macro_rules! cfg_has_statx {
      ({ $($then_tt:tt)* } else { $($else_tt:tt)* }) => {
@@ -75,3 +75,6 @@ index fbc7f04ce9a..bf49ad70590 100644
  }
  
  cfg_has_statx! {{
+-- 
+2.42.0
+

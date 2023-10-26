@@ -10,7 +10,7 @@ Signed-off-by: Ruben De Smet <ruben.de.smet@rubdos.be>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/config.example.toml b/config.example.toml
-index 0c65b25fe13..43beaed6e7b 100644
+index 5c4bee87553..63946e46122 100644
 --- a/config.example.toml
 +++ b/config.example.toml
 @@ -88,7 +88,7 @@ changelog-seen = 2
@@ -22,3 +22,6 @@ index 0c65b25fe13..43beaed6e7b 100644
  
  # LLVM experimental targets to build support for. These targets are specified in
  # the same format as above, but since these targets are experimental, they are
+-- 
+2.42.0
+

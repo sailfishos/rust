@@ -55,10 +55,10 @@ index 479bbcc17a8..2e90d8d6be7 100644
      fn st_ctime_nsec(&self) -> i64 {
          self.as_inner().as_inner().st_ctime_nsec as i64
 diff --git a/library/std/src/sys/unix/fs.rs b/library/std/src/sys/unix/fs.rs
-index bf49ad70590..ff01830e0f6 100644
+index 8438d7dcc30..c5ca8582f88 100644
 --- a/library/std/src/sys/unix/fs.rs
 +++ b/library/std/src/sys/unix/fs.rs
-@@ -109,19 +109,10 @@ struct StatxExtraFields {
+@@ -98,19 +98,10 @@ struct StatxExtraFields {
          // This is needed to check if btime is supported by the filesystem.
          stx_mask: u32,
          stx_btime: libc::statx_timestamp,
@@ -71,7 +71,7 @@ index bf49ad70590..ff01830e0f6 100644
 -        stx_mtime: libc::statx_timestamp,
 -
      }
-
+ 
 -    // We prefer `statx` on Linux if available, which contains file creation time,
 -    // as well as 64-bit timestamps of all kinds.
 -    // Default `stat64` contains no creation time and may have 32-bit `time_t`.
@@ -80,7 +80,7 @@ index bf49ad70590..ff01830e0f6 100644
      unsafe fn try_statx(
          fd: c_int,
          path: *const c_char,
-@@ -211,13 +202,6 @@ fn statx(
+@@ -200,13 +191,6 @@ fn statx(
          let extra = StatxExtraFields {
              stx_mask: buf.stx_mask,
              stx_btime: buf.stx_btime,
@@ -92,9 +92,9 @@ index bf49ad70590..ff01830e0f6 100644
 -            #[cfg(target_pointer_width = "32")]
 -            stx_mtime: buf.stx_mtime,
          };
-
+ 
          Some(Ok(FileAttr { stat, statx_extra_fields: Some(extra) }))
-@@ -365,36 +349,6 @@ impl FileAttr {
+@@ -354,36 +338,6 @@ impl FileAttr {
          fn from_stat64(stat: stat64) -> Self {
              Self { stat, statx_extra_fields: None }
          }
@@ -131,7 +131,7 @@ index bf49ad70590..ff01830e0f6 100644
      }
  } else {
      impl FileAttr {
-@@ -420,15 +374,24 @@ pub fn file_type(&self) -> FileType {
+@@ -409,15 +363,24 @@ pub fn file_type(&self) -> FileType {
  #[cfg(target_os = "netbsd")]
  impl FileAttr {
      pub fn modified(&self) -> io::Result<SystemTime> {
@@ -141,7 +141,7 @@ index bf49ad70590..ff01830e0f6 100644
 +            tv_nsec: self.stat.st_mtimensec as libc::c_long,
 +        }))
      }
-
+ 
      pub fn accessed(&self) -> io::Result<SystemTime> {
 -        Ok(SystemTime::new(self.stat.st_atime as i64, self.stat.st_atimensec as i64))
 +        Ok(SystemTime::from(libc::timespec {
@@ -149,7 +149,7 @@ index bf49ad70590..ff01830e0f6 100644
 +            tv_nsec: self.stat.st_atimensec as libc::c_long,
 +        }))
      }
-
+ 
      pub fn created(&self) -> io::Result<SystemTime> {
 -        Ok(SystemTime::new(self.stat.st_birthtime as i64, self.stat.st_birthtimensec as i64))
 +        Ok(SystemTime::from(libc::timespec {
@@ -158,8 +158,8 @@ index bf49ad70590..ff01830e0f6 100644
 +        }))
      }
  }
-
-@@ -441,19 +404,18 @@ impl FileAttr {
+ 
+@@ -430,19 +393,18 @@ impl FileAttr {
          target_os = "vita"
      )))]
      pub fn modified(&self) -> io::Result<SystemTime> {
@@ -176,7 +176,7 @@ index bf49ad70590..ff01830e0f6 100644
 +            tv_nsec: self.stat.st_mtime_nsec as _,
 +        }))
      }
-
+ 
      #[cfg(any(target_os = "vxworks", target_os = "espidf", target_os = "vita"))]
      pub fn modified(&self) -> io::Result<SystemTime> {
 -        Ok(SystemTime::new(self.stat.st_mtime as i64, 0))
@@ -185,9 +185,9 @@ index bf49ad70590..ff01830e0f6 100644
 +            tv_nsec: 0,
 +        }))
      }
-
+ 
      #[cfg(target_os = "horizon")]
-@@ -468,19 +430,18 @@ pub fn modified(&self) -> io::Result<SystemTime> {
+@@ -457,19 +419,18 @@ pub fn modified(&self) -> io::Result<SystemTime> {
          target_os = "vita"
      )))]
      pub fn accessed(&self) -> io::Result<SystemTime> {
@@ -204,7 +204,7 @@ index bf49ad70590..ff01830e0f6 100644
 +            tv_nsec: self.stat.st_atime_nsec as _,
 +        }))
      }
-
+ 
      #[cfg(any(target_os = "vxworks", target_os = "espidf", target_os = "vita"))]
      pub fn accessed(&self) -> io::Result<SystemTime> {
 -        Ok(SystemTime::new(self.stat.st_atime as i64, 0))
@@ -213,9 +213,9 @@ index bf49ad70590..ff01830e0f6 100644
 +            tv_nsec: 0,
 +        }))
      }
-
+ 
      #[cfg(target_os = "horizon")]
-@@ -497,7 +458,10 @@ pub fn accessed(&self) -> io::Result<SystemTime> {
+@@ -486,7 +447,10 @@ pub fn accessed(&self) -> io::Result<SystemTime> {
          target_os = "watchos",
      ))]
      pub fn created(&self) -> io::Result<SystemTime> {
@@ -225,9 +225,9 @@ index bf49ad70590..ff01830e0f6 100644
 +            tv_nsec: self.stat.st_birthtime_nsec as libc::c_long,
 +        }))
      }
-
+ 
      #[cfg(not(any(
-@@ -513,7 +477,10 @@ pub fn created(&self) -> io::Result<SystemTime> {
+@@ -502,7 +466,10 @@ pub fn created(&self) -> io::Result<SystemTime> {
          cfg_has_statx! {
              if let Some(ext) = &self.statx_extra_fields {
                  return if (ext.stx_mask & libc::STATX_BTIME) != 0 {
@@ -244,10 +244,13 @@ index 17b4130c202..4e8dd9a86e7 100644
 --- a/library/std/src/sys/unix/time.rs
 +++ b/library/std/src/sys/unix/time.rs
 @@ -36,6 +36,7 @@ pub(in crate::sys::unix) struct Timespec {
-
+ 
  impl SystemTime {
      #[cfg_attr(target_os = "horizon", allow(unused))]
 +    #[cfg_attr(target_env = "gnu", allow(dead_code))]
      pub fn new(tv_sec: i64, tv_nsec: i64) -> SystemTime {
          SystemTime { t: Timespec::new(tv_sec, tv_nsec) }
      }
+-- 
+2.42.0
+
