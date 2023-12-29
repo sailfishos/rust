@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: David Greaves <david.greaves@jolla.com>
 Date: Wed, 20 Jan 2021 09:40:34 +0000
-Subject: [PATCH] Provide ENV controls to bypass some sb2 calls between
- fork exec
+Subject: [PATCH] Provide ENV controls to bypass some sb2 calls between fork
+ exec
 
 In threaded systems there can be deadlocks caused by calling malloc
 after fork and before exec. Rust manages this but sb2 does not.
@@ -32,12 +32,13 @@ and the fallback fork/exec is used.
 Note that some reworking of rust's handling of program/argv[0] was
 needed to support the SHIM functionality
 
+Co-authored-by: Ruben De Smet <ruben.de.smet@rubdos.be>
 Signed-off-by: David Greaves <david.greaves@jolla.com>
 Signed-off-by: Ruben De Smet <ruben.de.smet@rubdos.be>
 ---
  .../src/sys/unix/process/process_common.rs    |  55 ++++++-
- .../std/src/sys/unix/process/process_unix.rs  | 138 ++++++++++++++++--
- 2 files changed, 173 insertions(+), 20 deletions(-)
+ .../std/src/sys/unix/process/process_unix.rs  | 137 ++++++++++++++++--
+ 2 files changed, 172 insertions(+), 20 deletions(-)
 
 diff --git a/library/std/src/sys/unix/process/process_common.rs b/library/std/src/sys/unix/process/process_common.rs
 index 640648e8707..f15625e0514 100644
@@ -155,7 +156,7 @@ index 640648e8707..f15625e0514 100644
          // Set a new arg0
          let arg = os2c(arg, &mut self.saw_nul);
 diff --git a/library/std/src/sys/unix/process/process_unix.rs b/library/std/src/sys/unix/process/process_unix.rs
-index 3963e7f52d5..d08e4db6199 100644
+index 3963e7f52d5..b491c2ad75f 100644
 --- a/library/std/src/sys/unix/process/process_unix.rs
 +++ b/library/std/src/sys/unix/process/process_unix.rs
 @@ -25,7 +25,7 @@
@@ -253,13 +254,12 @@ index 3963e7f52d5..d08e4db6199 100644
              #[cfg(target_os = "linux")]
              if self.get_create_pidfd() {
                  self.send_pidfd(&output);
-@@ -268,7 +331,48 @@ pub fn exec(&mut self, default: Stdio) -> io::Error {
+@@ -268,7 +331,47 @@ pub fn exec(&mut self, default: Stdio) -> io::Error {
              Err(e) => e,
          }
      }
 -
-+    fn unwrap_drop(&mut self, fh: sys::unix::pipe::AnonPipe) {
-+        use crate::os::unix::io::AsRawFd;
++    fn unwrap_drop(&mut self, fh: impl crate::os::unix::io::AsRawFd) {
 +        // drop() simply calls libc::close(fh.fd)
 +        match self.close {
 +            Some(real_close) => {
@@ -303,7 +303,7 @@ index 3963e7f52d5..d08e4db6199 100644
      // And at this point we've reached a special time in the life of the
      // child. The child must now be considered hamstrung and unable to
      // do anything other than syscalls really. Consider the following
-@@ -308,13 +412,13 @@ unsafe fn do_exec(
+@@ -308,13 +411,13 @@ unsafe fn do_exec(
          use crate::sys::{self, cvt_r};
  
          if let Some(fd) = stdio.stdin.fd() {
@@ -320,7 +320,7 @@ index 3963e7f52d5..d08e4db6199 100644
          }
  
          #[cfg(not(target_os = "l4re"))]
-@@ -322,10 +426,10 @@ unsafe fn do_exec(
+@@ -322,10 +425,10 @@ unsafe fn do_exec(
              if let Some(_g) = self.get_groups() {
                  //FIXME: Redox kernel does not support setgroups yet
                  #[cfg(not(target_os = "redox"))]
@@ -333,7 +333,7 @@ index 3963e7f52d5..d08e4db6199 100644
              }
              if let Some(u) = self.get_uid() {
                  // When dropping privileges from root, the `setgroups` call
-@@ -337,13 +441,13 @@ unsafe fn do_exec(
+@@ -337,13 +440,13 @@ unsafe fn do_exec(
                  //FIXME: Redox kernel does not support setgroups yet
                  #[cfg(not(target_os = "redox"))]
                  if libc::getuid() == 0 && self.get_groups().is_none() {
@@ -350,7 +350,7 @@ index 3963e7f52d5..d08e4db6199 100644
          }
  
          if let Some(pgroup) = self.get_pgroup() {
-@@ -401,8 +505,12 @@ fn drop(&mut self) {
+@@ -401,8 +504,12 @@ fn drop(&mut self) {
              _reset = Some(Reset(*sys::os::environ()));
              *sys::os::environ() = envp.as_ptr();
          }
@@ -365,7 +365,7 @@ index 3963e7f52d5..d08e4db6199 100644
          Err(io::Error::last_os_error())
      }
  
-@@ -429,6 +537,7 @@ fn posix_spawn(
+@@ -429,6 +536,7 @@ fn posix_spawn(
          _: &ChildPipes,
          _: Option<&CStringArray>,
      ) -> io::Result<Option<Process>> {
@@ -373,7 +373,7 @@ index 3963e7f52d5..d08e4db6199 100644
          Ok(None)
      }
  
-@@ -452,12 +561,15 @@ fn posix_spawn(
+@@ -452,12 +560,15 @@ fn posix_spawn(
          use crate::mem::MaybeUninit;
          use crate::sys::{self, cvt_nz, unix_sigpipe_attr_specified};
  
@@ -390,5 +390,5 @@ index 3963e7f52d5..d08e4db6199 100644
              return Ok(None);
          }
 -- 
-2.42.0
+2.43.0
 
