@@ -1,3 +1,6 @@
+* Fri Mar 15 2024 Ruben De Smet <ruben.de.smet@rubdos.be> - 1.75.0+git1
+- [rust] Update to version 1.75.0. JB#61739
+
 * Mon Feb 6 2023 Matti Lehtimäki <matti.lehtimaki@jolla.com> - 1.61.0+git1
 - [rust] Update to version 1.61.0. JB#57222
 

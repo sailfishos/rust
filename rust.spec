@@ -11,13 +11,13 @@
 %define rust_use_bootstrap 1
 %define bootstrap_arches i486
 
-%global bootstrap_rust 1.64.0
-%global bootstrap_cargo 1.64.0
+%global bootstrap_rust 1.75.0
+%global bootstrap_cargo 1.75.0
 
 # Only x86_64 and i686 are Tier 1 platforms at this time.
 # https://forge.rust-lang.org/platform-support.html
 
-%global rust_version 1.64.0
+%global rust_version 1.75.0
 
 %ifarch %ix86
 %define xbuildjobs %{nil}
@@ -76,6 +76,7 @@ Patch4: 0004-Force-the-target-when-building-for-CompileKind-Host.patch
 Patch5: 0005-Provide-ENV-controls-to-bypass-some-sb2-calls-betwee.patch
 Patch6: 0006-Scratchbox2-needs-to-be-able-to-tell-cargo-the-defau.patch
 Patch7: 0007-Disable-aarch64-outline-atomics-for-now.patch
+Patch8: 0008-Revert-Use-statx-s-64-bit-times-on-32-bit-linux-gnu.patch
 # This is the real rustc spec - the stub one appears near the end.
 %ifarch %ix86
 
@@ -272,7 +273,7 @@ rm -rf vendor/lzma-sys/xz-*/
 rm -rf vendor/openssl-src/openssl/
 
 # This only affects the transient rust-installer, but let it use our dynamic xz-libs
-sed -i.lzma -e '/LZMA_API_STATIC/d' src/bootstrap/tool.rs
+sed -i.lzma -e '/LZMA_API_STATIC/d' src/bootstrap/src/core/build_steps/tool.rs
 
 # The configure macro will modify some autoconf-related files, which upsets
 # cargo when it tries to verify checksums in those files.  If we just truncate
