@@ -1,3 +1,6 @@
+* Fri Mar 15 2024 Ruben De Smet <ruben.de.smet@rubdos.be> - 1.75.0+git1
+- [rust] Update to version 1.75.0. JB#61739
+
 * Mon Feb 6 2023 Matti Lehtimäki <matti.lehtimaki@jolla.com> - 1.61.0+git1
 - [rust] Update to version 1.61.0. JB#57222
 
@@ -16,7 +19,7 @@
 * Fri Feb 05 2021 Martin Kampas <martin.kampas@jolla.com> - 1.44.0+git10
 - [rust] Fix host-gcc use under SDK. JB#52983
 
-* Fri Jan 25 2021 Niels Breet <niels.breet@jolla.com> - 1.44.0+git9
+* Fri Jan 29 2021 Niels Breet <niels.breet@jolla.com> - 1.44.0+git9
 - [aarch64] Enable aarch64 build for rust cross. JB#50499
 
 * Mon Jan 25 2021 Matti Kosola <matti.kosola@jolla.com> - 1.44.0+git8
