@@ -11,13 +11,10 @@
 %define rust_use_bootstrap 1
 %define bootstrap_arches i486
 
-%global bootstrap_rust 1.75.0
-%global bootstrap_cargo 1.75.0
+%global bootstrap_rust 1.89.0
+%global bootstrap_cargo 1.89.0
 
-# Only x86_64 and i686 are Tier 1 platforms at this time.
-# https://forge.rust-lang.org/platform-support.html
-
-%global rust_version 1.75.0
+%global rust_version 1.89.0
 
 %ifarch %ix86
 %define xbuildjobs %{nil}
@@ -65,19 +62,17 @@ License:        (ASL 2.0 or MIT) and (BSD and MIT)
 URL:            https://www.rust-lang.org
 
 %global rustc_package rustc-%{rust_version}-src
-Source0:        rustc-%{rust_version}-src.tar.gz
-Source100:      rust-%{rust_version}-i686-unknown-linux-gnu.tar.gz
+Source0:        rustc-%{rust_version}-src.tar.xz
+Source100:      rust-%{rust_version}-i686-unknown-linux-gnu.tar.xz
 Source200:      README.md
 
-Patch1: 0001-Set-proper-llvm-targets.patch
-Patch2: 0002-Disable-statx-for-all-builds.-JB-50106.patch
-Patch3: 0003-Scratchbox2-needs-to-be-able-to-tell-rustc-the-defau.patch
-Patch4: 0004-Force-the-target-when-building-for-CompileKind-Host.patch
-Patch5: 0005-Provide-ENV-controls-to-bypass-some-sb2-calls-betwee.patch
-Patch6: 0006-Scratchbox2-needs-to-be-able-to-tell-cargo-the-defau.patch
-Patch7: 0007-Disable-aarch64-outline-atomics-for-now.patch
-Patch8: 0008-Revert-Use-statx-s-64-bit-times-on-32-bit-linux-gnu.patch
-Patch9: 0009-Relocate-unset-tmp.patch
+Patch1:  0001-Set-proper-llvm-targets.patch
+Patch3:  0003-Scratchbox2-needs-to-be-able-to-tell-rustc-the-defau.patch
+Patch4:  0004-Force-the-target-when-building-for-CompileKind-Host.patch
+Patch5:  0005-Provide-ENV-controls-to-bypass-some-sb2-calls-betwee.patch
+Patch6:  0006-Scratchbox2-needs-to-be-able-to-tell-cargo-the-defau.patch
+Patch9:  0009-Relocate-unset-tmp.patch
+Patch10: 0010-Disable-building-LLVM-tools.patch
 # This is the real rustc spec - the stub one appears near the end.
 %ifarch %ix86
 
@@ -123,7 +118,7 @@ BuildRequires:  pkgconfig(liblzma)
 BuildRequires:  pkgconfig(openssl)
 BuildRequires:  pkgconfig(zlib)
 BuildRequires:  python3-base
-BuildRequires:  llvm-devel
+BuildRequires:  llvm-devel >= 20.1.7
 BuildRequires:  libffi-devel
 
 # make check needs "ps" for src/test/run-pass/wait-forked-but-failed-child.rs
@@ -258,8 +253,6 @@ test -f '%{local_rust_root}/bin/rustc'
 
 sed -i.try-py3 -e '/try python2.7/i try python3 "$@"' ./configure
 
-rm -rf src/llvm-project/
-
 # We never enable other LLVM tools.
 rm -rf src/tools/clang
 rm -rf src/tools/lld
@@ -342,6 +335,8 @@ PATH=/opt/cross/bin/:$PATH
   --disable-rpath \
   --disable-codegen-tests \
   --disable-verbose-tests \
+  --disable-lld \
+  --disable-llvm-bitcode-linker \
   %{enable_debuginfo} \
   --enable-extended \
   --enable-vendor \
@@ -415,37 +410,22 @@ find %{buildroot}%{rustlibdir} -maxdepth 1 -type f -exec rm -v '{}' '+'
 find %{buildroot}%{rustlibdir} -type f -name '*.orig' -exec rm -v '{}' '+'
 
 # Remove unwanted documentation files (we already package them)
-rm -f %{buildroot}%{_docdir}/%{name}/README.md
-rm -f %{buildroot}%{_docdir}/%{name}/COPYRIGHT
-rm -f %{buildroot}%{_docdir}/%{name}/LICENSE
-rm -f %{buildroot}%{_docdir}/%{name}/LICENSE-APACHE
-rm -f %{buildroot}%{_docdir}/%{name}/LICENSE-MIT
-rm -f %{buildroot}%{_docdir}/%{name}/LICENSE-THIRD-PARTY
-rm -f %{buildroot}%{_docdir}/%{name}/*.old
+rm -fv %{buildroot}%{_docdir}/cargo/README.md
+rm -fv %{buildroot}%{_docdir}/cargo/LICENSE-APACHE
+rm -fv %{buildroot}%{_docdir}/cargo/LICENSE-MIT
+rm -fv %{buildroot}%{_docdir}/cargo/LICENSE-THIRD-PARTY
+rm -fv %{buildroot}%{_docdir}/rustc/README.md
 
 # Create the path for crate-devel packages
 mkdir -p %{buildroot}%{_datadir}/cargo/registry
 
 %if %without lldb
-rm -f %{buildroot}%{_bindir}/rust-lldb
-rm -f %{buildroot}%{rustlibdir}/etc/lldb_*
+rm -fv %{buildroot}%{_bindir}/rust-lldb
+rm -fv %{buildroot}%{rustlibdir}/etc/lldb_*
 %endif
 
 # Remove unwanted documentation files
-rm -f %{buildroot}%{_bindir}/rustdoc
-rm -fr %{buildroot}%{_mandir}/man1
-
-# We don't want Rust copies of LLVM tools (rust-lld, rust-llvm-dwp)
-rm -f %{buildroot}%{rustlibdir}/%{rust_x86_triple}/bin/rust-ll*
-%if 0%{?build_armv7}
-rm -f %{buildroot}%{rustlibdir}/%{rust_arm_triple}/bin/rust-ll*
-%endif
-%if 0%{?build_aarch64}
-rm -f %{buildroot}%{rustlibdir}/%{rust_aarch64_triple}/bin/rust-ll*
-%endif
-
-# Remove cargo-credential-1password
-rm -f %{buildroot}%{_libexecdir}/cargo-credential-1password
+rm -fvr %{buildroot}%{_mandir}/man1
 
 %check
 # Disabled for efficient rebuilds until the hanging fix is completed
@@ -467,10 +447,26 @@ rm -f %{buildroot}%{_libexecdir}/cargo-credential-1password
 %files
 %license COPYRIGHT LICENSE-APACHE LICENSE-MIT
 %doc README.md
+%doc %{_docdir}/rustc/COPYRIGHT-library.html
+%doc %{_docdir}/rustc/COPYRIGHT.html
+%doc %{_docdir}/rustc/licenses/Apache-2.0.txt
+%doc %{_docdir}/rustc/licenses/BSD-2-Clause.txt
+%doc %{_docdir}/rustc/licenses/CC-BY-SA-4.0.txt
+%doc %{_docdir}/rustc/licenses/GCC-exception-3.1.txt
+%doc %{_docdir}/rustc/licenses/GPL-2.0-only.txt
+%doc %{_docdir}/rustc/licenses/GPL-3.0-or-later.txt
+%doc %{_docdir}/rustc/licenses/ISC.txt
+%doc %{_docdir}/rustc/licenses/LLVM-exception.txt
+%doc %{_docdir}/rustc/licenses/MIT.txt
+%doc %{_docdir}/rustc/licenses/NCSA.txt
+%doc %{_docdir}/rustc/licenses/OFL-1.1.txt
+%doc %{_docdir}/rustc/licenses/Unicode-3.0.txt
 %{_bindir}/rustc
 %{_libdir}/*.so
 %dir %{rustlibdir}
 %dir %{rustlibdir}/%{rust_x86_triple}
+%dir %{rustlibdir}/%{rust_x86_triple}/bin
+%{rustlibdir}/%{rust_x86_triple}/bin/rust-*
 %dir %{rustlibdir}/%{rust_x86_triple}/lib
 %{rustlibdir}/%{rust_x86_triple}/lib/*.so
 #%%exclude %%{_bindir}/*miri

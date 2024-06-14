@@ -1,0 +1,7 @@
+rust-*/
+rustc-*/
+BUILD/
+RPMS/
+SRPMS/
+BUILDROOT/
+installroot/

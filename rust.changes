@@ -1,3 +1,8 @@
+* Fri Aug 22 2025 Matti Viljanen <matti.viljanen@jolla.com.fi> - 1.88.0+git1
+- [rust] Update to version 1.89.0.
+- Don't build LLVM tools, speeding up compilation
+- Clean up .spec file
+
 * Fri Mar 15 2024 Ruben De Smet <ruben.de.smet@rubdos.be> - 1.75.0+git1
 - [rust] Update to version 1.75.0. JB#61739
 

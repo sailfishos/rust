@@ -1,0 +1,23 @@
+From 8a176aea1829da31ebedd372c67fe1eec765fc5b Mon Sep 17 00:00:00 2001
+From: Matti Viljanen <matti.viljanen@jolla.com>
+Date: Wed, 20 Aug 2025 11:17:41 +0300
+Subject: [PATCH] Disable-building-LLVM-tools
+
+We don't package them, so don't build them at all.
+---
+ src/bootstrap/src/core/config/config.rs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/bootstrap/src/core/config/config.rs b/src/bootstrap/src/core/config/config.rs
+index d3393afca..fcbd0fae1 100644
+--- a/src/bootstrap/src/core/config/config.rs
++++ b/src/bootstrap/src/core/config/config.rs
+@@ -360,7 +360,7 @@ impl Config {
+ 
+             // This is needed by codegen_ssa on macOS to ship `llvm-objcopy` aliased to
+             // `rust-objcopy` to workaround bad `strip`s on macOS.
+-            llvm_tools_enabled: true,
++            llvm_tools_enabled: false,
+ 
+             ..Default::default()
+         }

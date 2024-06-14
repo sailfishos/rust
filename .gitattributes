@@ -1,1 +1,2 @@
-*.tar.gz filter=lfs diff=lfs merge=lfs -text
+rustc-1.89.0-src.tar.xz filter=lfs diff=lfs merge=lfs -text
+rust-1.89.0-i686-unknown-linux-gnu.tar.xz filter=lfs diff=lfs merge=lfs -text

@@ -15,25 +15,22 @@ Signed-off-by: Ruben De Smet <ruben.de.smet@rubdos.be>
  1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/compiler/rustc_session/src/config.rs b/compiler/rustc_session/src/config.rs
-index f745bc390ca..934f16ab4ab 100644
+index 87e4b0a17..9a274d18f 100644
 --- a/compiler/rustc_session/src/config.rs
 +++ b/compiler/rustc_session/src/config.rs
-@@ -2241,7 +2241,14 @@ pub fn parse_target_triple(
+@@ -2263,7 +2263,14 @@ pub fn parse_target_triple(early_dcx: &EarlyDiagCtxt, matches: &getopts::Matches
              })
          }
-         Some(target) => TargetTriple::TargetTriple(target),
--        _ => TargetTriple::from_triple(host_triple()),
+         Some(target) => TargetTuple::TargetTuple(target),
+-        _ => TargetTuple::from_tuple(host_tuple()),
 +        // In SFOS we use SB2 and need to tell rust what the
 +        // 'default' target is. If the SB2_RUST_TARGET_TRIPLE
 +        // environment variable is set then it is used. Otherwise
-+        // the fallback is the host_triple as usual
++        // the fallback is the host triple as usual
 +        _ => match std::env::var("SB2_RUST_TARGET_TRIPLE") {
-+            Ok(tgt) => TargetTriple::TargetTriple(tgt),
-+            Err(_) => TargetTriple::from_triple(host_triple()),
++            Ok(tgt) => TargetTuple::TargetTuple(tgt),
++            Err(_) => TargetTuple::from_tuple(host_tuple()),
 +        }
      }
  }
  
--- 
-2.43.0
-

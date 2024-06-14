@@ -1,37 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matti Viljanen <matti.viljanen@jolla.com>
+Date: Sat, 22 Jun 2024 11:30:30 +0300
+Subject: [PATCH] Relocate unset tmp
+
+In Linux, unset $TMPDIR defaults to /tmp. In sb2 the temp files written to /tmp
+by rustc are no longer available when the linker tries to use them. Work around
+the issue by setting $TMPDIR to $HOME/.tmp when determining the temporary
+directory location whenever linking is determined to happen.
+
+If $TMPDIR is already set, that value is used as expected.
+---
+ compiler/rustc_codegen_ssa/src/back/link.rs | 22 ++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
+
 diff --git a/compiler/rustc_codegen_ssa/src/back/link.rs b/compiler/rustc_codegen_ssa/src/back/link.rs
-index dd9d277fb..160e472cf 100644
+index 8882ba359..8fabd9e62 100644
 --- a/compiler/rustc_codegen_ssa/src/back/link.rs
 +++ b/compiler/rustc_codegen_ssa/src/back/link.rs
-@@ -48,7 +48,7 @@ use std::ffi::OsString;
- use std::fs::{read, File, OpenOptions};
- use std::io::{BufWriter, Write};
- use std::ops::Deref;
+@@ -5,7 +5,7 @@ use std::ffi::OsString;
+ use std::fs::{File, OpenOptions, read};
+ use std::io::{BufReader, BufWriter, Write};
+ use std::ops::{ControlFlow, Deref};
 -use std::path::{Path, PathBuf};
-+use std::path::{MAIN_SEPARATOR, Path, PathBuf};
- use std::process::{ExitStatus, Output, Stdio};
++use std::path::{MAIN_SEPARATOR_STR, Path, PathBuf};
+ use std::process::{Output, Stdio};
  use std::{env, fmt, fs, io, mem, str};
  
-@@ -95,11 +95,24 @@ pub fn link_binary<'a>(
+@@ -101,11 +101,31 @@ pub fn link_binary(
          });
  
          if outputs.outputs.should_link() {
 +            let mut clear_tmp = false;
-+            if env::var_os("TMPDIR").is_none() && env::var_os("HOME").is_some() {
-+                let home_tmp = env::var_os("HOME").unwrap();
-+                let home_tmp = format!("{}{}{}", home_tmp.to_string_lossy(), MAIN_SEPARATOR, ".tmp");
-+                env::set_var("TMPDIR", &home_tmp);
++            if env::var_os("TMPDIR").is_none()
++                && let Some(mut home_tmp) = env::var_os("HOME")
++            {
++                use std::str::FromStr;
++                home_tmp.push(OsString::from_str(MAIN_SEPARATOR_STR).unwrap());
++                home_tmp.push(OsString::from_str(".tmp").unwrap());
++                unsafe {
++                    env::set_var("TMPDIR", &home_tmp);
++                }
 +                if !Path::new(&home_tmp).exists() {
-+                    let _ = fs::create_dir_all(home_tmp);
++                    let _ = fs::create_dir_all(Path::new(&home_tmp));
 +                }
 +                clear_tmp = true;
 +            }
-             let tmpdir = TempFileBuilder::new()
+             let tmpdir = TempDirBuilder::new()
                  .prefix("rustc")
                  .tempdir()
-                 .unwrap_or_else(|error| sess.emit_fatal(errors::CreateTempDir { error }));
+                 .unwrap_or_else(|error| sess.dcx().emit_fatal(errors::CreateTempDir { error }));
              let path = MaybeTempDir::new(tmpdir, sess.opts.cg.save_temps);
 +            if clear_tmp {
-+                env::remove_var("TMP");
++                unsafe {
++                    env::remove_var("TMP");
++                }
 +            }
              let output = out_filename(
                  sess,
