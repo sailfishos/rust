@@ -70,11 +70,11 @@ Source100:      rust-%{rust_version}-i686-unknown-linux-gnu.tar.xz
 Source200:      README.md
 
 Patch1: 0001-Set-proper-llvm-targets.patch
-Patch3: 0003-Scratchbox2-needs-to-be-able-to-tell-rustc-the-defau.patch
-Patch4: 0004-Force-the-target-when-building-for-CompileKind-Host.patch
-Patch5: 0005-Provide-ENV-controls-to-bypass-some-sb2-calls-betwee.patch
-Patch6: 0006-Scratchbox2-needs-to-be-able-to-tell-cargo-the-defau.patch
-Patch9: 0009-Relocate-unset-tmp.patch
+Patch2: 0002-Scratchbox2-needs-to-be-able-to-tell-rustc-the-defau.patch
+Patch3: 0003-Force-the-target-when-building-for-CompileKind-Host.patch
+Patch4: 0004-Provide-ENV-controls-to-bypass-some-sb2-calls-betwee.patch
+Patch5: 0005-Scratchbox2-needs-to-be-able-to-tell-cargo-the-defau.patch
+Patch6: 0006-Relocate-unset-tmp.patch
 # This is the real rustc spec - the stub one appears near the end.
 %ifarch %ix86
 
