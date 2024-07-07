@@ -1,8 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matti Viljanen <matti.viljanen@kapsi.fi>
+Date: Sat, 22 Jun 2024 11:30:30 +0300
+Subject: [PATCH] Relocate unset tmp
+
+In Linux, unset $TMPDIR defaults to /tmp. In sb2 the temp files written to /tmp
+by rustc are no longer available when the linker tries to use them. Work around
+the issue by setting $TMPDIR to $HOME/.tmp when determining the temporary
+directory location whenever linking is determined to happen.
+
+If $TMPDIR is already set, that value is used as expected.
+
+Signed-off-by: Matti Viljanen <matti.viljanen@kapsi.fi>
+---
+ compiler/rustc_codegen_ssa/src/back/link.rs | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
 diff --git a/compiler/rustc_codegen_ssa/src/back/link.rs b/compiler/rustc_codegen_ssa/src/back/link.rs
-index dd9d277fb..160e472cf 100644
+index b458f325b..e1b9666e6 100644
 --- a/compiler/rustc_codegen_ssa/src/back/link.rs
 +++ b/compiler/rustc_codegen_ssa/src/back/link.rs
-@@ -48,7 +48,7 @@ use std::ffi::OsString;
+@@ -48,7 +48,7 @@ use std::ffi::{OsStr, OsString};
  use std::fs::{read, File, OpenOptions};
  use std::io::{BufWriter, Write};
  use std::ops::Deref;
@@ -10,10 +27,10 @@ index dd9d277fb..160e472cf 100644
 +use std::path::{MAIN_SEPARATOR, Path, PathBuf};
  use std::process::{ExitStatus, Output, Stdio};
  use std::{env, fmt, fs, io, mem, str};
- 
-@@ -95,11 +95,24 @@ pub fn link_binary<'a>(
+
+@@ -95,11 +95,24 @@ pub fn link_binary(
          });
- 
+
          if outputs.outputs.should_link() {
 +            let mut clear_tmp = false;
 +            if env::var_os("TMPDIR").is_none() && env::var_os("HOME").is_some() {
@@ -28,7 +45,7 @@ index dd9d277fb..160e472cf 100644
              let tmpdir = TempFileBuilder::new()
                  .prefix("rustc")
                  .tempdir()
-                 .unwrap_or_else(|error| sess.emit_fatal(errors::CreateTempDir { error }));
+                 .unwrap_or_else(|error| sess.dcx().emit_fatal(errors::CreateTempDir { error }));
              let path = MaybeTempDir::new(tmpdir, sess.opts.cg.save_temps);
 +            if clear_tmp {
 +                env::remove_var("TMP");
@@ -36,3 +53,6 @@ index dd9d277fb..160e472cf 100644
              let output = out_filename(
                  sess,
                  crate_type,
+--
+2.45.2
+

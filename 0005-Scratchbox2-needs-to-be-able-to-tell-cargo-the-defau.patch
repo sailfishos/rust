@@ -7,18 +7,19 @@ Subject: [PATCH] Scratchbox2 needs to be able to tell cargo the default
 This is analogous to the SB2 patch to rustc; ac226bbc018e11311394126fe580763c5bc77a2c
 
 Signed-off-by: Ruben De Smet <ruben.de.smet@rubdos.be>
+Signed-off-by: Matti Viljanen <matti.viljanen@kapsi.fi>
 ---
- src/tools/cargo | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ src/tools/cargo/src/cargo/core/compiler/compile_kind.rs | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/src/tools/cargo/src/cargo/core/compiler/compile_kind.rs b/src/tools/cargo/src/cargo/core/compiler/compile_kind.rs
-index 73d8f89cc..5d17c15d2 100644
+index 222732dde..a5056be7b 100644
 --- a/src/tools/cargo/src/cargo/core/compiler/compile_kind.rs
 +++ b/src/tools/cargo/src/cargo/core/compiler/compile_kind.rs
 @@ -71,7 +71,13 @@ impl CompileKind {
          }
- 
-         let kinds = match &config.build_config()?.target {
+
+         let kinds = match &gctx.build_config()?.target {
 -            None => Ok(vec![CompileKind::Host]),
 +            None => {
 +                if let Ok(sb2_tgt) = std::env::var("SB2_RUST_TARGET_TRIPLE") {
@@ -26,10 +27,10 @@ index 73d8f89cc..5d17c15d2 100644
 +                } else {
 +                    Ok(vec![CompileKind::Host])
 +                }
-+            }
-             Some(build_target_config) => dedup(&build_target_config.values(config)?),
++            },
+             Some(build_target_config) => dedup(&build_target_config.values(gctx)?),
          };
- 
--- 
-2.42.0
+
+--
+2.45.2
 
