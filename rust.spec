@@ -1,7 +1,7 @@
 # This spec is split into 2.
 
 # There is some common header and then the real rust
-# compiler/libraries are built in x86 root wrapped in an ifarch. The
+# compiler/libraries are built in x86/x86_64 root wrapped in an ifarch. The
 # arm/aarch64 stubs are built at the end
 
 # SFOS: If we're using the downloaded binaries then we don't define this
@@ -25,7 +25,7 @@
 %ifarch %{arm}
 %define xbuildjobs %{nil}
 %else
-%ifarch aarch64
+%ifarch aarch64 x86_64
 # Limit build jobs in order to not exhaust memory on builds. JB#50504
 %define xbuildjobs -j 4
 %endif
@@ -50,6 +50,7 @@
 %define rust_aarch64_triple_comma ""
 %endif
 %global rust_x86_triple i686-unknown-linux-gnu
+%global rust_x86_64_triple x86_64-unknown-linux-gnu
 
 %global python python3
 
@@ -67,6 +68,7 @@ URL:            https://www.rust-lang.org
 %global rustc_package rustc-%{rust_version}-src
 Source0:        rustc-%{rust_version}-src.tar.gz
 Source100:      rust-%{rust_version}-i686-unknown-linux-gnu.tar.gz
+Source101:      rust-%{rust_version}-x86_64-unknown-linux-gnu.tar.gz
 Source200:      README.md
 
 Patch1: 0001-Set-proper-llvm-targets.patch
@@ -79,13 +81,20 @@ Patch7: 0007-Disable-aarch64-outline-atomics-for-now.patch
 Patch8: 0008-Revert-Use-statx-s-64-bit-times-on-32-bit-linux-gnu.patch
 Patch9: 0009-Relocate-unset-tmp.patch
 # This is the real rustc spec - the stub one appears near the end.
+%ifarch %ix86 x86_64
+
+# For native builds
 %ifarch %ix86
+%global rust_build_triple %{rust_x86_triple}
+%else
+%global rust_build_triple %{rust_x86_64_triple}
+%endif
 
 #SFOS : our rust_use_bootstrap puts them into /usr
 %if 0%{?rust_use_bootstrap}
-%global bootstrap_root rust-%{rust_version}-%{rust_x86_triple}
+%global bootstrap_root rust-%{rust_version}-%{rust_build_triple}
 %global local_rust_root %{_builddir}/%{bootstrap_root}/usr
-%global bootstrap_source rust-%{rust_version}-%{rust_x86_triple}.tar.gz
+%global bootstrap_source rust-%{rust_version}-%{rust_build_triple}.tar.gz
 %else
 %global local_rust_root /usr
 BuildRequires:  cargo >= %{bootstrap_cargo}
@@ -132,7 +141,7 @@ BuildRequires:  procps
 # debuginfo-gdb tests need gdb
 BuildRequires:  gdb
 
-# Disable non-x86 build
+# Disable non-x86 and x64_64 build
 ExcludeArch:    armv7hl
 ExcludeArch:    aarch64
 
@@ -172,7 +181,7 @@ segfaults, and guarantees thread safety.
 
 This package includes the Rust compiler and documentation generator.
 
-
+%ifarch %ix86
 %package std-static-%{rust_x86_triple}
 # This package is built as an i486.rpm and provides the native libs
 Provides: rust-std-static
@@ -181,6 +190,18 @@ Summary:        Standard library for Rust
 %description std-static-%{rust_x86_triple}
 This package includes the standard libraries for building
 %{rust_x86_triple} applications written in Rust.
+%endif
+
+%ifarch x86_64
+%package std-static-%{rust_x86_64_triple}
+# This package is built as an x86_64.rpm and provides the native libs
+Provides: rust-std-static
+Summary:        Standard library for Rust
+
+%description std-static-%{rust_x86_64_triple}
+This package includes the standard libraries for building
+%{rust_x86_64_triple} applications written in Rust.
+%endif
 
 %if 0%{?build_armv7}
 %package std-static-%{rust_arm_triple}
@@ -246,9 +267,14 @@ and ensure that you'll always get a repeatable build.
 
 %prep
 #SFOS : our rust_use_bootstrap puts them into /usr
+
 %if 0%{?rust_use_bootstrap}
+%ifarch %ix86
 %setup -q -n %{bootstrap_root} -T -b 100
-./install.sh --components=cargo,rustc,rust-std-%{rust_x86_triple} \
+%else
+%setup -q -n %{bootstrap_root} -T -b 101
+%endif
+./install.sh --components=cargo,rustc,rust-std-%{rust_build_triple} \
   --prefix=%{local_rust_root} --disable-ldconfig
 test -f '%{local_rust_root}/bin/cargo'
 test -f '%{local_rust_root}/bin/rustc'
@@ -291,8 +317,8 @@ find -name '*.rs' -type f -perm /111 -exec chmod -v -x '{}' '+'
 
 export RUSTFLAGS="%{rustflags}"
 # We set these to be blank as rust will set appropriate values when
-# invoking either the 'native' x86 or a suitable cross compiler.
-# Leaving the x86 values causes problems when building the arm/aarch64 libs
+# invoking either the 'native' x86/x86_64 or a suitable cross compiler.
+# Leaving the x86/x86_64 values causes problems when building the arm/aarch64 libs
 CFLAGS=
 CXXFLAGS=
 FFLAGS=
@@ -324,12 +350,12 @@ PATH=/opt/cross/bin/:$PATH
 # fi
 ###
 
-# The configure macro sets CFLAGS to x86 which causes the ARM target to fail
+# The configure macro sets CFLAGS to x86/x86_64 which causes the ARM target to fail
 ./configure --prefix=/usr --exec-prefix=/usr --bindir=/usr/bin --sbindir=/usr/sbin --sysconfdir=/etc --datadir=/usr/share --includedir=/usr/include --libdir=/usr/lib --libexecdir=/usr/libexec --localstatedir=/var --sharedstatedir=/var/lib --mandir=/usr/share/man --infodir=/usr/share/info \
  --disable-option-checking \
   --libdir=%{common_libdir} \
-  --build=%{rust_x86_triple} --host=%{rust_x86_triple}\
-  --target=%{rust_x86_triple}%{rust_arm_triple_comma}%{rust_aarch64_triple_comma}\
+  --build=%{rust_build_triple} --host=%{rust_build_triple}\
+  --target=%{rust_build_triple}%{rust_arm_triple_comma}%{rust_aarch64_triple_comma}\
   --python=%{python} \
   --local-rust-root=%{local_rust_root} \
   --enable-local-rebuild \
@@ -349,8 +375,8 @@ PATH=/opt/cross/bin/:$PATH
   --tools=cargo \
   --llvm-root=/usr/ \
   --enable-parallel-compiler \
-  --set target.%{rust_x86_triple}.cc=/usr/bin/cc \
-  --set target.%{rust_x86_triple}.ar=/usr/bin/ar \
+  --set target.%{rust_build_triple}.cc=/usr/bin/cc \
+  --set target.%{rust_build_triple}.ar=/usr/bin/ar \
 %if 0%{?build_armv7}
   --set target.%{rust_arm_triple}.cc=/opt/cross/bin/armv7hl-meego-linux-gnueabi-cc \
   --set target.%{rust_arm_triple}.ar=/opt/cross/bin/armv7hl-meego-linux-gnueabi-ar \
@@ -389,7 +415,7 @@ find %{buildroot}%{_libdir} -maxdepth 1 -type f -name '*.so' \
 # The libdir libraries are identical to those under rustlib/.  It's easier on
 # library loading if we keep them in libdir, but we do need them in rustlib/
 # to support dynamic linking for compiler plugins, so we'll symlink.
-(cd "%{buildroot}%{rustlibdir}/%{rust_x86_triple}/lib" &&
+(cd "%{buildroot}%{rustlibdir}/%{rust_build_triple}/lib" &&
  find ../../../../%{_lib} -maxdepth 1 -name '*.so' |
  while read lib; do
    if [ -f "${lib##*/}" ]; then
@@ -436,7 +462,7 @@ rm -f %{buildroot}%{_bindir}/rustdoc
 rm -fr %{buildroot}%{_mandir}/man1
 
 # We don't want Rust copies of LLVM tools (rust-lld, rust-llvm-dwp)
-rm -f %{buildroot}%{rustlibdir}/%{rust_x86_triple}/bin/rust-ll*
+rm -f %{buildroot}%{rustlibdir}/%{rust_build_triple}/bin/rust-ll*
 %if 0%{?build_armv7}
 rm -f %{buildroot}%{rustlibdir}/%{rust_arm_triple}/bin/rust-ll*
 %endif
@@ -450,7 +476,7 @@ rm -f %{buildroot}%{_libexecdir}/cargo-credential-1password
 %check
 # Disabled for efficient rebuilds until the hanging fix is completed
 %if 0
-%ifarch %ix86
+%ifarch %ix86 x86_64
 %{?cmake_path:export PATH=%{cmake_path}:$PATH}
 %{?rustflags:export RUSTFLAGS="%{rustflags}"}
 
@@ -470,16 +496,26 @@ rm -f %{buildroot}%{_libexecdir}/cargo-credential-1password
 %{_bindir}/rustc
 %{_libdir}/*.so
 %dir %{rustlibdir}
-%dir %{rustlibdir}/%{rust_x86_triple}
-%dir %{rustlibdir}/%{rust_x86_triple}/lib
-%{rustlibdir}/%{rust_x86_triple}/lib/*.so
+%dir %{rustlibdir}/%{rust_build_triple}
+%dir %{rustlibdir}/%{rust_build_triple}/lib
+%{rustlibdir}/%{rust_build_triple}/lib/*.so
 #%%exclude %%{_bindir}/*miri
 
+%ifarch %ix86
 %files std-static-%{rust_x86_triple}
 %dir %{rustlibdir}
 %dir %{rustlibdir}/%{rust_x86_triple}
 %dir %{rustlibdir}/%{rust_x86_triple}/lib
 %{rustlibdir}/%{rust_x86_triple}/lib/*.rlib
+%endif
+
+%ifarch x86_64
+%files std-static-%{rust_x86_64_triple}
+%dir %{rustlibdir}
+%dir %{rustlibdir}/%{rust_x86_64_triple}
+%dir %{rustlibdir}/%{rust_x86_64_triple}/lib
+%{rustlibdir}/%{rust_x86_64_triple}/lib/*.rlib
+%endif
 
 %if 0%{?build_armv7}
 %files std-static-%{rust_arm_triple}
@@ -525,7 +561,7 @@ rm -f %{buildroot}%{_libexecdir}/cargo-credential-1password
 %{rustlibdir}/etc/lldb_*
 %endif
 
-# This is the non x86 spec to produce dummy rust/cargo binaries
+# This is the non x86/x86_64 spec to produce dummy rust/cargo binaries
 %else
 
 # The rust package tags
