@@ -18,7 +18,7 @@ index 73d8f89cc..5d17c15d2 100644
 @@ -71,7 +71,13 @@ impl CompileKind {
          }
  
-         let kinds = match &config.build_config()?.target {
+         let kinds = match &gctx.build_config()?.target {
 -            None => Ok(vec![CompileKind::Host]),
 +            None => {
 +                if let Ok(sb2_tgt) = std::env::var("SB2_RUST_TARGET_TRIPLE") {
@@ -27,7 +27,7 @@ index 73d8f89cc..5d17c15d2 100644
 +                    Ok(vec![CompileKind::Host])
 +                }
 +            }
-             Some(build_target_config) => dedup(&build_target_config.values(config)?),
+             Some(build_target_config) => dedup(&build_target_config.values(gctx)?),
          };
  
 -- 

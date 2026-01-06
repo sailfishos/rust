@@ -56,8 +56,8 @@ index ab0b2a3eda3..4ac9ae4fd04 100644
          self.as_inner().as_inner().st_ctime_nsec as i64
 diff --git a/library/std/src/sys/unix/fs.rs b/library/std/src/sys/unix/fs.rs
 index 8798aa7061c..1d92664b2e1 100644
---- a/library/std/src/sys/unix/fs.rs
-+++ b/library/std/src/sys/unix/fs.rs
+--- a/library/std/src/sys/pal/unix/fs.rs
++++ b/library/std/src/sys/pal/unix/fs.rs
 @@ -117,19 +117,10 @@ struct StatxExtraFields {
          // This is needed to check if btime is supported by the filesystem.
          stx_mask: u32,
@@ -131,125 +131,43 @@ index 8798aa7061c..1d92664b2e1 100644
      }
  } else {
      impl FileAttr {
-@@ -435,15 +389,24 @@ pub fn file_type(&self) -> FileType {
- #[cfg(target_os = "netbsd")]
- impl FileAttr {
-     pub fn modified(&self) -> io::Result<SystemTime> {
--        Ok(SystemTime::new(self.stat.st_mtime as i64, self.stat.st_mtimensec as i64))
-+        Ok(SystemTime::from(libc::timespec {
-+            tv_sec: self.stat.st_mtime as libc::time_t,
-+            tv_nsec: self.stat.st_mtimensec as libc::c_long,
-+        }))
-     }
- 
-     pub fn accessed(&self) -> io::Result<SystemTime> {
--        Ok(SystemTime::new(self.stat.st_atime as i64, self.stat.st_atimensec as i64))
-+        Ok(SystemTime::from(libc::timespec {
-+            tv_sec: self.stat.st_atime as libc::time_t,
-+            tv_nsec: self.stat.st_atimensec as libc::c_long,
-+        }))
-     }
- 
-     pub fn created(&self) -> io::Result<SystemTime> {
--        Ok(SystemTime::new(self.stat.st_birthtime as i64, self.stat.st_birthtimensec as i64))
-+        Ok(SystemTime::from(libc::timespec {
-+            tv_sec: self.stat.st_birthtime as libc::time_t,
-+            tv_nsec: self.stat.st_birthtimensec as libc::c_long,
-+        }))
-     }
- }
- 
-@@ -472,19 +435,18 @@ impl FileAttr {
+@@ -472,12 +435,6 @@ impl FileAttr {
          target_os = "hurd",
      )))]
      pub fn modified(&self) -> io::Result<SystemTime> {
 -        #[cfg(target_pointer_width = "32")]
 -        cfg_has_statx! {
 -            if let Some(mtime) = self.stx_mtime() {
--                return Ok(SystemTime::new(mtime.tv_sec, mtime.tv_nsec as i64));
+-                return SystemTime::new(mtime.tv_sec, mtime.tv_nsec as i64);
 -            }
 -        }
--
--        Ok(SystemTime::new(self.stat.st_mtime as i64, self.stat.st_mtime_nsec as i64))
-+        Ok(SystemTime::from(libc::timespec {
-+            tv_sec: self.stat.st_mtime as libc::time_t,
-+            tv_nsec: self.stat.st_mtime_nsec as _,
-+        }))
-     }
  
-     #[cfg(any(target_os = "vxworks", target_os = "espidf", target_os = "vita"))]
-     pub fn modified(&self) -> io::Result<SystemTime> {
--        Ok(SystemTime::new(self.stat.st_mtime as i64, 0))
-+        Ok(SystemTime::from(libc::timespec {
-+            tv_sec: self.stat.st_mtime as libc::time_t,
-+            tv_nsec: 0,
-+        }))
+         SystemTime::new(self.stat.st_mtime as i64, self.stat.st_mtime_nsec as i64)
      }
- 
-     #[cfg(any(target_os = "horizon", target_os = "hurd"))]
-@@ -500,19 +462,18 @@ pub fn modified(&self) -> io::Result<SystemTime> {
+@@ -500,12 +462,6 @@ pub fn modified(&self) -> io::Result<SystemTime> {
          target_os = "hurd",
      )))]
      pub fn accessed(&self) -> io::Result<SystemTime> {
 -        #[cfg(target_pointer_width = "32")]
 -        cfg_has_statx! {
 -            if let Some(atime) = self.stx_atime() {
--                return Ok(SystemTime::new(atime.tv_sec, atime.tv_nsec as i64));
+-                return SystemTime::new(atime.tv_sec, atime.tv_nsec as i64);
 -            }
 -        }
--
--        Ok(SystemTime::new(self.stat.st_atime as i64, self.stat.st_atime_nsec as i64))
-+        Ok(SystemTime::from(libc::timespec {
-+            tv_sec: self.stat.st_atime as libc::time_t,
-+            tv_nsec: self.stat.st_atime_nsec as _,
-+        }))
-     }
  
-     #[cfg(any(target_os = "vxworks", target_os = "espidf", target_os = "vita"))]
-     pub fn accessed(&self) -> io::Result<SystemTime> {
--        Ok(SystemTime::new(self.stat.st_atime as i64, 0))
-+        Ok(SystemTime::from(libc::timespec {
-+            tv_sec: self.stat.st_atime as libc::time_t,
-+            tv_nsec: 0,
-+        }))
+         SystemTime::new(self.stat.st_atime as i64, self.stat.st_atime_nsec as i64)
      }
- 
-     #[cfg(any(target_os = "horizon", target_os = "hurd"))]
-@@ -529,7 +490,10 @@ pub fn accessed(&self) -> io::Result<SystemTime> {
-         target_os = "watchos",
-     ))]
-     pub fn created(&self) -> io::Result<SystemTime> {
--        Ok(SystemTime::new(self.stat.st_birthtime as i64, self.stat.st_birthtime_nsec as i64))
-+        Ok(SystemTime::from(libc::timespec {
-+            tv_sec: self.stat.st_birthtime as libc::time_t,
-+            tv_nsec: self.stat.st_birthtime_nsec as libc::c_long,
-+        }))
-     }
- 
-     #[cfg(not(any(
-@@ -545,7 +509,10 @@ pub fn created(&self) -> io::Result<SystemTime> {
-         cfg_has_statx! {
-             if let Some(ext) = &self.statx_extra_fields {
-                 return if (ext.stx_mask & libc::STATX_BTIME) != 0 {
--                    Ok(SystemTime::new(ext.stx_btime.tv_sec, ext.stx_btime.tv_nsec as i64))
-+                    Ok(SystemTime::from(libc::timespec {
-+                        tv_sec: ext.stx_btime.tv_sec as libc::time_t,
-+                        tv_nsec: ext.stx_btime.tv_nsec as _,
-+                    }))
-                 } else {
-                     Err(io::const_io_error!(
-                         io::ErrorKind::Uncategorized,
 diff --git a/library/std/src/sys/unix/time.rs b/library/std/src/sys/unix/time.rs
 index f2e86a4fb2b..fee9e07ec01 100644
---- a/library/std/src/sys/unix/time.rs
-+++ b/library/std/src/sys/unix/time.rs
+--- a/library/std/src/sys/pal/unix/time.rs
++++ b/library/std/src/sys/pal/unix/time.rs
 @@ -34,6 +34,7 @@ pub(in crate::sys::unix) struct Timespec {
  
  impl SystemTime {
      #[cfg_attr(any(target_os = "horizon", target_os = "hurd"), allow(unused))]
 +    #[cfg_attr(target_env = "gnu", allow(dead_code))]
-     pub fn new(tv_sec: i64, tv_nsec: i64) -> SystemTime {
-         SystemTime { t: Timespec::new(tv_sec, tv_nsec) }
+     pub fn new(tv_sec: i64, tv_nsec: i64) -> Result<SystemTime, io::Error> {
+         Ok(SystemTime { t: Timespec::new(tv_sec, tv_nsec)? })
      }
 -- 
 2.43.0
