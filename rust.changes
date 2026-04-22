@@ -1,3 +1,6 @@
+* Wed Apr 22 2026 Matti Viljanen <matti.viljanen@jolla.com> - 1.75.0+git2
+- [rust] Prevent symlink-directory collision chmod attack. Fixes JB#64101
+
 * Fri Mar 15 2024 Ruben De Smet <ruben.de.smet@rubdos.be> - 1.75.0+git1
 - [rust] Update to version 1.75.0. JB#61739
 
@@ -34,7 +37,7 @@
 - [rust] Enable cross-building. JB#50499
 - Add support for default targets
 - Enable use of host-cc
-- Partial fix for fork/exec deadlocks in rust's std:: library. 
+- Partial fix for fork/exec deadlocks in rust's std:: library.
 
 * Tue Nov 3 2020 Niels Breet <niels.breet@jolla.com> - 1.44.0+git5
 - [rust] Limit memory usage for aarch64 builds. JB#50504
