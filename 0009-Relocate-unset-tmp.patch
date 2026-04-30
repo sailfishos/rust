@@ -5,7 +5,7 @@ index dd9d277fb..160e472cf 100644
 @@ -48,7 +48,7 @@ use std::ffi::OsString;
  use std::fs::{read, File, OpenOptions};
  use std::io::{BufWriter, Write};
- use std::ops::Deref;
+ use std::ops::{ControlFlow, Deref};
 -use std::path::{Path, PathBuf};
 +use std::path::{MAIN_SEPARATOR, Path, PathBuf};
  use std::process::{ExitStatus, Output, Stdio};
@@ -28,7 +28,7 @@ index dd9d277fb..160e472cf 100644
              let tmpdir = TempFileBuilder::new()
                  .prefix("rustc")
                  .tempdir()
-                 .unwrap_or_else(|error| sess.emit_fatal(errors::CreateTempDir { error }));
+                 .unwrap_or_else(|error| sess.dcx().emit_fatal(errors::CreateTempDir { error }));
              let path = MaybeTempDir::new(tmpdir, sess.opts.cg.save_temps);
 +            if clear_tmp {
 +                env::remove_var("TMP");

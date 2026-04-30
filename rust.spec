@@ -11,13 +11,13 @@
 %define rust_use_bootstrap 1
 %define bootstrap_arches i486
 
-%global bootstrap_rust 1.75.0
-%global bootstrap_cargo 1.75.0
+%global bootstrap_rust 1.82.0
+%global bootstrap_cargo 1.82.0
 
 # Only x86_64 and i686 are Tier 1 platforms at this time.
 # https://forge.rust-lang.org/platform-support.html
 
-%global rust_version 1.75.0
+%global rust_version 1.82.0
 
 %ifarch %ix86
 %define xbuildjobs %{nil}
@@ -65,7 +65,7 @@ License:        (ASL 2.0 or MIT) and (BSD and MIT)
 URL:            https://www.rust-lang.org
 
 %global rustc_package rustc-%{rust_version}-src
-Source0:        rustc-%{rust_version}-src.tar.gz
+Source0:        rustc-%{rust_version}-src.tar.xz
 Source100:      rust-%{rust_version}-i686-unknown-linux-gnu.tar.gz
 Source200:      README.md
 
@@ -126,6 +126,7 @@ BuildRequires:  pkgconfig(zlib)
 BuildRequires:  python3-base
 BuildRequires:  llvm-devel
 BuildRequires:  libffi-devel
+BuildRequires:  ninja
 
 # make check needs "ps" for src/test/run-pass/wait-forked-but-failed-child.rs
 BuildRequires:  procps
@@ -260,6 +261,7 @@ test -f '%{local_rust_root}/bin/rustc'
 sed -i.try-py3 -e '/try python2.7/i try python3 "$@"' ./configure
 
 rm -rf src/llvm-project/
+mkdir src/llvm-project
 
 # We never enable other LLVM tools.
 rm -rf src/tools/clang
@@ -336,11 +338,12 @@ PATH=/opt/cross/bin/:$PATH
   --enable-local-rebuild \
   --enable-llvm-link-shared \
   --enable-ccache \
-  --enable-optimize \
+  --enable-optimize-llvm \
   --disable-docs \
   --disable-compiler-docs \
   --disable-jemalloc \
   --disable-rpath \
+  --disable-lld \
   --disable-codegen-tests \
   --disable-verbose-tests \
   %{enable_debuginfo} \
@@ -348,7 +351,7 @@ PATH=/opt/cross/bin/:$PATH
   --enable-vendor \
   --set rust.codegen-units-std=1 \
   --tools=cargo \
-  --llvm-root=/usr/ \
+  --llvm-root=/usr \
   --enable-parallel-compiler \
   --set target.%{rust_x86_triple}.cc=/usr/bin/cc \
   --set target.%{rust_x86_triple}.ar=/usr/bin/ar \
@@ -360,7 +363,8 @@ PATH=/opt/cross/bin/:$PATH
   --set target.%{rust_aarch64_triple}.cc=/opt/cross/bin/aarch64-meego-linux-gnu-cc \
   --set target.%{rust_aarch64_triple}.ar=/opt/cross/bin/aarch64-meego-linux-gnu-ar \
 %endif
-  --set build.verbose=2
+  --set build.verbose=2 \
+  --set build.optimized-compiler-builtins=false
 
 %{python} ./x.py %{xbuildjobs} build
 
@@ -416,12 +420,14 @@ find %{buildroot}%{rustlibdir} -maxdepth 1 -type f -exec rm -v '{}' '+'
 find %{buildroot}%{rustlibdir} -type f -name '*.orig' -exec rm -v '{}' '+'
 
 # Remove unwanted documentation files (we already package them)
-rm -f %{buildroot}%{_docdir}/%{name}/README.md
-rm -f %{buildroot}%{_docdir}/%{name}/COPYRIGHT
-rm -f %{buildroot}%{_docdir}/%{name}/LICENSE
-rm -f %{buildroot}%{_docdir}/%{name}/LICENSE-APACHE
-rm -f %{buildroot}%{_docdir}/%{name}/LICENSE-MIT
-rm -f %{buildroot}%{_docdir}/%{name}/LICENSE-THIRD-PARTY
+rm -f %{buildroot}%{_docdir}/rustc/README.md
+rm -f %{buildroot}%{_docdir}/rustc/COPYRIGHT
+rm -f %{buildroot}%{_docdir}/rustc/LICENSE-APACHE
+rm -f %{buildroot}%{_docdir}/rustc/LICENSE-MIT
+rm -f %{buildroot}%{_docdir}/cargo/README.md
+rm -f %{buildroot}%{_docdir}/cargo/LICENSE-APACHE
+rm -f %{buildroot}%{_docdir}/cargo/LICENSE-MIT
+rm -f %{buildroot}%{_docdir}/cargo/LICENSE-THIRD-PARTY
 rm -f %{buildroot}%{_docdir}/%{name}/*.old
 
 # Create the path for crate-devel packages
@@ -473,7 +479,9 @@ rm -f %{buildroot}%{_libexecdir}/cargo-credential-1password
 %dir %{rustlibdir}
 %dir %{rustlibdir}/%{rust_x86_triple}
 %dir %{rustlibdir}/%{rust_x86_triple}/lib
+%dir %{rustlibdir}/%{rust_x86_triple}/bin
 %{rustlibdir}/%{rust_x86_triple}/lib/*.so
+%{rustlibdir}/%{rust_x86_triple}/bin/*
 #%%exclude %%{_bindir}/*miri
 
 %files std-static-%{rust_x86_triple}
