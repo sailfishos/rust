@@ -11,13 +11,13 @@
 %define rust_use_bootstrap 1
 %define bootstrap_arches i486
 
-%global bootstrap_rust 1.75.0
-%global bootstrap_cargo 1.75.0
+%global bootstrap_rust 1.76.0
+%global bootstrap_cargo 1.76.0
 
 # Only x86_64 and i686 are Tier 1 platforms at this time.
 # https://forge.rust-lang.org/platform-support.html
 
-%global rust_version 1.75.0
+%global rust_version 1.76.0
 
 %ifarch %ix86
 %define xbuildjobs %{nil}
@@ -57,7 +57,7 @@
 %bcond_without lldb
 
 Name:           rust
-Version:        %{rust_version}+git2
+Version:        %{rust_version}+git1
 Release:        1
 Summary:        The Rust Programming Language
 License:        (ASL 2.0 or MIT) and (BSD and MIT)
@@ -333,6 +333,7 @@ PATH=/opt/cross/bin/:$PATH
   --target=%{rust_x86_triple}%{rust_arm_triple_comma}%{rust_aarch64_triple_comma}\
   --python=%{python} \
   --local-rust-root=%{local_rust_root} \
+  --release-channel=stable \
   --enable-local-rebuild \
   --enable-llvm-link-shared \
   --enable-ccache \

@@ -14,7 +14,7 @@ Signed-off-by: Matti Lehtimäki <matti.lehtimaki@jolla.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/compiler/rustc_target/src/spec/targets/aarch64_unknown_linux_gnu.rs b/compiler/rustc_target/src/spec/targets/aarch64_unknown_linux_gnu.rs
-index c0b07db3818..b8f240295be 100644
+index 5b3a2ffa5995..1e82a8aa9177 100644
 --- a/compiler/rustc_target/src/spec/targets/aarch64_unknown_linux_gnu.rs
 +++ b/compiler/rustc_target/src/spec/targets/aarch64_unknown_linux_gnu.rs
 @@ -7,7 +7,7 @@ pub fn target() -> Target {
@@ -25,7 +25,7 @@ index c0b07db3818..b8f240295be 100644
 +            features: "+v8a".into(),
              mcount: "\u{1}_mcount".into(),
              max_atomic_width: Some(128),
-             supported_sanitizers: SanitizerSet::ADDRESS
+             stack_probes: StackProbeType::Inline,
 -- 
 2.43.0
 

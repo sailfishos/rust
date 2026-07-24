@@ -1,3 +1,6 @@
+* Fri Jul 24 2026 Andrew Branson <andrew.branson@jolla.com> - 1.76.0+git1
+- [rust] Update to version 1.76.0 and select the stable release channel.
+
 * Wed Apr 22 2026 Matti Viljanen <matti.viljanen@jolla.com> - 1.75.0+git2
 - [rust] Prevent symlink-directory collision chmod attack. Fixes JB#64101
 
