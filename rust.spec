@@ -335,6 +335,7 @@ PATH=/opt/cross/bin/:$PATH
   --target=%{rust_x86_triple}%{rust_arm_triple_comma}%{rust_aarch64_triple_comma}\
   --python=%{python} \
   --local-rust-root=%{local_rust_root} \
+  --release-channel=stable \
   --enable-local-rebuild \
   --enable-llvm-link-shared \
   --enable-ccache \
