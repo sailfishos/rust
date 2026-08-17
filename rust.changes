@@ -1,3 +1,8 @@
+* Mon Aug 17 2026 Matti Viljanen <matti.viljanen@jolla.com> - 1.95.0+git1
+- [rust] Update to version 1.95.0.
+- Don't build LLVM tools, speeding up compilation
+- Clean up .spec file
+
 * Wed Apr 22 2026 Matti Viljanen <matti.viljanen@jolla.com> - 1.75.0+git2
 - [rust] Prevent symlink-directory collision chmod attack. Fixes JB#64101
 
