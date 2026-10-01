@@ -1,5 +1,5 @@
-* Mon Aug 17 2026 Matti Viljanen <matti.viljanen@jolla.com> - 1.95.0+git1
-- [rust] Update to version 1.95.0.
+* Thu Oct 01 2026 Matti Viljanen <matti.viljanen@jolla.com> - 1.95.0+git1
+- [rust] Update to version 1.95.0. JB#64166
 - Don't build LLVM tools, speeding up compilation
 - Clean up .spec file
 
