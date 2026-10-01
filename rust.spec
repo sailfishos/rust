@@ -15,6 +15,7 @@
 %global bootstrap_cargo 1.95.0
 
 %global rust_version 1.95.0
+%global extra_version git1
 
 %ifarch %ix86
 %define xbuildjobs %{nil}
@@ -54,7 +55,7 @@
 %bcond_without lldb
 
 Name:           rust
-Version:        %{rust_version}+git2
+Version:        %{rust_version}+%{extra_version}
 Release:        1
 Summary:        The Rust Programming Language
 License:        (ASL 2.0 or MIT) and (BSD and MIT)
